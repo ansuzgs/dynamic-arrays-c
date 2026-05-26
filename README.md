@@ -16,7 +16,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 
 | # | Title | Key Concept | Code |
 |---|-------|-------------|------|
-| 1 | [Hello, Array](posts/01_hello_array.md) | `malloc`, `free`, struct-based ownership | [post_01.c](src_posts/post_01.c) |
+| 1 | [Hello, Array](posts/01_hello_array.md) | `malloc`, `free`, struct-based ownership | [post_01.c](src/post_01.c) |
 | 2 | Growing Pains | `realloc`, automatic capacity management | *coming soon* |
 | 3 | The Growth Factor Debate | Amortized analysis, 1.5× vs 2× | *coming soon* |
 | 4 | Type Erasure | `void*` generics, `memcpy`, byte-level layout | *coming soon* |
