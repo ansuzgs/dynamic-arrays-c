@@ -1,0 +1,14 @@
+digraph IntArray {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=12];
+  node  [fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=10];
+
+  metadata [shape=record, style=filled, fillcolor="#FFF3CD",
+    label="{IntArray (struct)|data: 0x56fbb1d642d0|size: 5|capacity: 5}"];
+
+  buffer [shape=record, style=filled, fillcolor="#D1ECF1",
+    label="{Heap Buffer (20 bytes)|{<e0> [0]=10|<e1> [1]=20|<e2> [2]=30|<e3> [3]=40|<e4> [4]=50}}"];
+
+  metadata -> buffer [label="  owns (heap)", style=bold, color="#0C5460"];
+}
