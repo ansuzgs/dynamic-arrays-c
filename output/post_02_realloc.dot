@@ -1,0 +1,26 @@
+digraph Realloc {
+  rankdir=LR;
+  graph [fontname="Helvetica", fontsize=12, label="realloc: capacity 2 → 16", labelloc=t];
+  node  [fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=10];
+
+  subgraph cluster_old {
+    label="Before (FREED)"; style=dashed; color="#DC3545"; fontcolor="#DC3545";
+    old_meta [shape=record, style=filled, fillcolor="#F8D7DA",
+      label="{IntArray|size: 2|capacity: 2}"];
+    old_buf [shape=record, style=filled, fillcolor="#F8D7DA",
+      label="{10|20}"];
+    old_meta -> old_buf;
+  }
+
+  subgraph cluster_new {
+    label="After (CURRENT)"; style=solid; color="#28A745"; fontcolor="#28A745";
+    new_meta [shape=record, style=filled, fillcolor="#D4EDDA",
+      label="{IntArray|size: 12|capacity: 16}"];
+    new_buf [shape=record, style=filled, fillcolor="#D4EDDA",
+      label="{10|20|30|40|50|60|70|80|90|100|110|120|·|·|·|·}"];
+    new_meta -> new_buf;
+  }
+
+  old_buf -> new_buf [style=dashed, color="#0D6EFD", label="  memcpy 8B\n  + free old", fontcolor="#0D6EFD"];
+}
