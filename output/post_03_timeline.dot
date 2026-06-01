@@ -1,0 +1,146 @@
+digraph AllocationTimeline {
+  rankdir=TB;
+  graph [fontname="Helvetica", fontsize=13, label="Allocation Timeline: 2.0x growth vs 1.5x growth", labelloc=t, nodesep=0.3, ranksep=0.4];
+  node  [fontname="Helvetica", fontsize=10, shape=box, width=1.8];
+  edge  [fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_left {
+    label="2.0x growth"; style=rounded; color="#495057";
+    L0 [label="cap=1", style="filled,solid", fillcolor="#D4EDDA"];
+    L1 [label="cap=1\nfreed (sum=1)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L0 -> L1;
+    L2 [label="cap=2", style="filled,solid", fillcolor="#D4EDDA"];
+    L1 -> L2;
+    L3 [label="cap=2\nfreed (sum=3)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L2 -> L3;
+    L4 [label="cap=4", style="filled,solid", fillcolor="#D4EDDA"];
+    L3 -> L4;
+    L5 [label="cap=4\nfreed (sum=7)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L4 -> L5;
+    L6 [label="cap=8", style="filled,solid", fillcolor="#D4EDDA"];
+    L5 -> L6;
+    L7 [label="cap=8\nfreed (sum=15)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L6 -> L7;
+    L8 [label="cap=16", style="filled,solid", fillcolor="#D4EDDA"];
+    L7 -> L8;
+    L9 [label="cap=16\nfreed (sum=31)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L8 -> L9;
+    L10 [label="cap=32", style="filled,solid", fillcolor="#D4EDDA"];
+    L9 -> L10;
+    L11 [label="cap=32\nfreed (sum=63)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L10 -> L11;
+    L12 [label="cap=64", style="filled,solid", fillcolor="#D4EDDA"];
+    L11 -> L12;
+    L13 [label="cap=64\nfreed (sum=127)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L12 -> L13;
+    L14 [label="cap=128", style="filled,solid", fillcolor="#D4EDDA"];
+    L13 -> L14;
+    L15 [label="cap=128\nfreed (sum=255)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L14 -> L15;
+    L16 [label="cap=256", style="filled,solid", fillcolor="#D4EDDA"];
+    L15 -> L16;
+    L17 [label="cap=256\nfreed (sum=511)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L16 -> L17;
+    L18 [label="cap=512", style="filled,solid", fillcolor="#D4EDDA"];
+    L17 -> L18;
+    L19 [label="cap=512\nfreed (sum=1023)", style="filled,dashed", fillcolor="#F8D7DA"];
+    L18 -> L19;
+    L20 [label="cap=1024", style="filled,solid", fillcolor="#D4EDDA"];
+    L19 -> L20;
+  }
+
+  subgraph cluster_right {
+    label="1.5x growth"; style=rounded; color="#495057";
+    R0 [label="cap=1", style="filled,solid", fillcolor="#D4EDDA"];
+    R1 [label="cap=1\nfreed (sum=1)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R0 -> R1;
+    R2 [label="cap=2", style="filled,solid", fillcolor="#D4EDDA"];
+    R1 -> R2;
+    R3 [label="cap=2\nfreed (sum=3)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R2 -> R3;
+    R4 [label="cap=3", style="filled,solid", fillcolor="#D4EDDA"];
+    R3 -> R4;
+    R5 [label="cap=3\nfreed (sum=6)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R4 -> R5;
+    R6 [label="cap=4", style="filled,solid", fillcolor="#D4EDDA"];
+    R5 -> R6;
+    R7 [label="cap=4\nfreed (sum=10)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R6 -> R7;
+    R8 [label="cap=6", style="filled,solid", fillcolor="#D4EDDA"];
+    R7 -> R8;
+    R9 [label="cap=6\nfreed (sum=16)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R8 -> R9;
+    R10 [label="cap=9", style="filled,solid", fillcolor="#D4EDDA"];
+    R9 -> R10;
+    R11 [label="cap=9\nfreed (sum=25)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R10 -> R11;
+    R12 [label="cap=13", style="filled,solid", fillcolor="#D4EDDA"];
+    R11 -> R12;
+    R13 [label="cap=13\nfreed (sum=38)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R12 -> R13;
+    R14 [label="cap=19", style="filled,solid", fillcolor="#D4EDDA"];
+    R13 -> R14;
+    R15 [label="cap=19\nfreed (sum=57)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R14 -> R15;
+    R16 [label="cap=28", style="filled,solid", fillcolor="#D4EDDA"];
+    R15 -> R16;
+    R17 [label="cap=28\nfreed (sum=85)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R16 -> R17;
+    R18 [label="cap=42", style="filled,solid", fillcolor="#D4EDDA"];
+    R17 -> R18;
+    R19 [label="cap=42\nfreed (sum=127)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R18 -> R19;
+    R20 [label="cap=63", style="filled,solid", fillcolor="#D4EDDA"];
+    R19 -> R20;
+    R21 [label="cap=63\nfreed (sum=190)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R20 -> R21;
+    R22 [label="cap=94", style="filled,solid", fillcolor="#D4EDDA"];
+    R21 -> R22;
+    R23 [label="cap=94\nfreed (sum=284)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R22 -> R23;
+    R24 [label="cap=141", style="filled,solid", fillcolor="#D4EDDA"];
+    R23 -> R24;
+    R25 [label="cap=141\nfreed (sum=425)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R24 -> R25;
+    R26 [label="cap=211", style="filled,solid", fillcolor="#D4EDDA"];
+    R25 -> R26;
+    R27 [label="cap=211\nfreed (sum=636)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R26 -> R27;
+    R28 [label="cap=316", style="filled,solid", fillcolor="#D4EDDA"];
+    R27 -> R28;
+    R29 [label="cap=316\nfreed (sum=952)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R28 -> R29;
+    R30 [label="cap=474", style="filled,solid", fillcolor="#D4EDDA"];
+    R29 -> R30;
+    R31 [label="cap=474\nfreed (sum=1426)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R30 -> R31;
+    R32 [label="cap=711", style="filled,solid", fillcolor="#D4EDDA"];
+    R31 -> R32;
+    R33 [label="cap=711\nfreed (sum=2137)", style="filled,dashed", fillcolor="#F8D7DA"];
+    R32 -> R33;
+    R34 [label="cap=1066", style="filled,solid", fillcolor="#D4EDDA"];
+    R33 -> R34;
+  }
+
+  { rank=same; L0; R0; }
+  { rank=same; L1; R1; }
+  { rank=same; L2; R2; }
+  { rank=same; L3; R3; }
+  { rank=same; L4; R4; }
+  { rank=same; L5; R5; }
+  { rank=same; L6; R6; }
+  { rank=same; L7; R7; }
+  { rank=same; L8; R8; }
+  { rank=same; L9; R9; }
+  { rank=same; L10; R10; }
+  { rank=same; L11; R11; }
+  { rank=same; L12; R12; }
+  { rank=same; L13; R13; }
+  { rank=same; L14; R14; }
+  { rank=same; L15; R15; }
+  { rank=same; L16; R16; }
+  { rank=same; L17; R17; }
+  { rank=same; L18; R18; }
+  { rank=same; L19; R19; }
+  { rank=same; L20; R20; }
+}
