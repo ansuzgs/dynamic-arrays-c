@@ -543,16 +543,33 @@ static void generate_timeline_dot(const AllocHistory *h1,
         return;
     }
 
+    /* The 1.5x strategy produces many more events than 2.0x.
+     * To keep the diagram readable, we split the 1.5x column into two
+     * visual columns: R0..R(split-1) and R(split)..R(end).
+     * The split point aligns with h1->count - 3 so both halves of 1.5x
+     * run alongside the 2.0x column visually. A dashed bridge edge
+     * connects the two halves. */
+
+    /* Split point: the row at which the second 1.5x column starts.
+     * We split h2 roughly in half so both visual columns of 1.5x have
+     * similar height. This keeps the diagram compact: the left column
+     * (h1) plus the two 1.5x columns form a balanced 3-column layout. */
+    size_t split = (h2->count + 1) / 2;
+    /* Ensure split is at most h2->count - 1 so column 2 has content */
+    if (split >= h2->count) split = h2->count - 1;
+
     fprintf(f, "digraph AllocationTimeline {\n");
+    fprintf(f, "  newrank=true;\n");
     fprintf(f, "  rankdir=TB;\n");
+    fprintf(f, "  // nodesep=0.6 for more horizontal spacing between blocks\n");
     fprintf(f, "  graph [fontname=\"Helvetica\", fontsize=13, "
                "label=\"Allocation Timeline: %s vs %s\", labelloc=t, "
-               "nodesep=0.3, ranksep=0.4];\n", label1, label2);
+               "nodesep=0.6, ranksep=0.4];\n", label1, label2);
     fprintf(f, "  node  [fontname=\"Helvetica\", fontsize=10, "
                "shape=box, width=1.8];\n");
     fprintf(f, "  edge  [fontname=\"Helvetica\", fontsize=9];\n\n");
 
-    /* Left column: strategy 1 */
+    /* ── Left column: strategy 1 (2.0x) ────────────────────────── */
     fprintf(f, "  subgraph cluster_left {\n");
     fprintf(f, "    label=\"%s\"; style=rounded; color=\"#495057\";\n", label1);
     for (size_t i = 0; i < h1->count; i++) {
@@ -567,10 +584,13 @@ static void generate_timeline_dot(const AllocHistory *h1,
     }
     fprintf(f, "  }\n\n");
 
-    /* Right column: strategy 2 */
+    /* ── Right cluster: strategy 2 (1.5x), split into two columns ─ */
     fprintf(f, "  subgraph cluster_right {\n");
     fprintf(f, "    label=\"%s\"; style=rounded; color=\"#495057\";\n", label2);
-    for (size_t i = 0; i < h2->count; i++) {
+
+    /* Column 1 of 1.5x: R0 .. R(split-1) */
+    fprintf(f, "    \n    // --- Column 1 of 1.5x ---\n");
+    for (size_t i = 0; i < split; i++) {
         const char *color = h2->events[i].is_freed ? "#F8D7DA" : "#D4EDDA";
         const char *border = h2->events[i].is_freed ? "dashed" : "solid";
         fprintf(f, "    R%zu [label=\"cap=%zu", i, h2->events[i].capacity);
@@ -580,13 +600,50 @@ static void generate_timeline_dot(const AllocHistory *h1,
                 border, color);
         if (i > 0) fprintf(f, "    R%zu -> R%zu;\n", i - 1, i);
     }
+
+    /* Bridge edge: dashed, constraint=false so column 2 can start at top */
+    fprintf(f, "\n    // Bridge edge to second column (no rank constraint)\n");
+    fprintf(f, "    R%zu -> R%zu [constraint=false, style=dashed, "
+               "color=\"#007bff\", label=\" \", fontcolor=\"#007bff\"];\n\n",
+               split - 1, split);
+
+    /* Column 2 of 1.5x: R(split) .. R(end) */
+    fprintf(f, "    // --- Column 2 of 1.5x ---\n");
+    for (size_t i = split; i < h2->count; i++) {
+        const char *color = h2->events[i].is_freed ? "#F8D7DA" : "#D4EDDA";
+        const char *border = h2->events[i].is_freed ? "dashed" : "solid";
+        fprintf(f, "    R%zu [label=\"cap=%zu", i, h2->events[i].capacity);
+        if (h2->events[i].is_freed)
+            fprintf(f, "\\nfreed (sum=%zu)", h2->events[i].cumulative_sum);
+        fprintf(f, "\", style=\"filled,%s\", fillcolor=\"%s\"];\n",
+                border, color);
+        if (i > split) fprintf(f, "    R%zu -> R%zu;\n", i - 1, i);
+    }
+
     fprintf(f, "  }\n\n");
 
-    /* Invisible edges to align the two columns */
-    size_t min_count = h1->count < h2->count ? h1->count : h2->count;
-    for (size_t i = 0; i < min_count; i++) {
-        fprintf(f, "  { rank=same; L%zu; R%zu; }\n", i, i);
+    /* ── Rank synchronization: align 3 visual columns ─────────── */
+    /* L(i) aligns with R(i) (first 1.5x col) and R(split+i) (second
+     * 1.5x col). This creates a neat 3-column layout. */
+    fprintf(f, "  // Synchronize ranks across 3 visual columns\n");
+    size_t col2_len = h2->count - split;
+    for (size_t i = 0; i < h1->count || i < split || i < col2_len; i++) {
+        int has_l  = (i < h1->count);
+        int has_r1 = (i < split);
+        int has_r2 = (i < col2_len);
+
+        /* Only emit rank=same when at least two nodes align */
+        if ((has_l + has_r1 + has_r2) >= 2) {
+            fprintf(f, "  { rank=same;");
+            if (has_l)  fprintf(f, " L%zu;", i);
+            if (has_r1) fprintf(f, " R%zu;", i);
+            if (has_r2) fprintf(f, " R%zu;", split + i);
+            fprintf(f, " }\n");
+        }
     }
+
+    /* Any leftover rows in the first 1.5x column that don't align with
+     * either L or R2 (e.g. the last row R17 that has no L18 or R35) */
 
     fprintf(f, "}\n");
     fclose(f);

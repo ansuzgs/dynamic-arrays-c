@@ -1,6 +1,8 @@
 digraph AllocationTimeline {
+  newrank=true;
   rankdir=TB;
-  graph [fontname="Helvetica", fontsize=13, label="Allocation Timeline: 2.0x growth vs 1.5x growth", labelloc=t, nodesep=0.3, ranksep=0.4];
+  // nodesep=0.6 for more horizontal spacing between blocks
+  graph [fontname="Helvetica", fontsize=13, label="Allocation Timeline: 2.0x growth vs 1.5x growth", labelloc=t, nodesep=0.6, ranksep=0.4];
   node  [fontname="Helvetica", fontsize=10, shape=box, width=1.8];
   edge  [fontname="Helvetica", fontsize=9];
 
@@ -51,6 +53,8 @@ digraph AllocationTimeline {
 
   subgraph cluster_right {
     label="1.5x growth"; style=rounded; color="#495057";
+    
+    // --- Column 1 of 1.5x ---
     R0 [label="cap=1", style="filled,solid", fillcolor="#D4EDDA"];
     R1 [label="cap=1\nfreed (sum=1)", style="filled,dashed", fillcolor="#F8D7DA"];
     R0 -> R1;
@@ -86,8 +90,12 @@ digraph AllocationTimeline {
     R15 -> R16;
     R17 [label="cap=28\nfreed (sum=85)", style="filled,dashed", fillcolor="#F8D7DA"];
     R16 -> R17;
+
+    // Bridge edge to second column (no rank constraint)
+    R17 -> R18 [constraint=false, style=dashed, color="#007bff", label=" ", fontcolor="#007bff"];
+
+    // --- Column 2 of 1.5x ---
     R18 [label="cap=42", style="filled,solid", fillcolor="#D4EDDA"];
-    R17 -> R18;
     R19 [label="cap=42\nfreed (sum=127)", style="filled,dashed", fillcolor="#F8D7DA"];
     R18 -> R19;
     R20 [label="cap=63", style="filled,solid", fillcolor="#D4EDDA"];
@@ -122,25 +130,23 @@ digraph AllocationTimeline {
     R33 -> R34;
   }
 
-  { rank=same; L0; R0; }
-  { rank=same; L1; R1; }
-  { rank=same; L2; R2; }
-  { rank=same; L3; R3; }
-  { rank=same; L4; R4; }
-  { rank=same; L5; R5; }
-  { rank=same; L6; R6; }
-  { rank=same; L7; R7; }
-  { rank=same; L8; R8; }
-  { rank=same; L9; R9; }
-  { rank=same; L10; R10; }
-  { rank=same; L11; R11; }
-  { rank=same; L12; R12; }
-  { rank=same; L13; R13; }
-  { rank=same; L14; R14; }
-  { rank=same; L15; R15; }
-  { rank=same; L16; R16; }
+  // Synchronize ranks across 3 visual columns
+  { rank=same; L0; R0; R18; }
+  { rank=same; L1; R1; R19; }
+  { rank=same; L2; R2; R20; }
+  { rank=same; L3; R3; R21; }
+  { rank=same; L4; R4; R22; }
+  { rank=same; L5; R5; R23; }
+  { rank=same; L6; R6; R24; }
+  { rank=same; L7; R7; R25; }
+  { rank=same; L8; R8; R26; }
+  { rank=same; L9; R9; R27; }
+  { rank=same; L10; R10; R28; }
+  { rank=same; L11; R11; R29; }
+  { rank=same; L12; R12; R30; }
+  { rank=same; L13; R13; R31; }
+  { rank=same; L14; R14; R32; }
+  { rank=same; L15; R15; R33; }
+  { rank=same; L16; R16; R34; }
   { rank=same; L17; R17; }
-  { rank=same; L18; R18; }
-  { rank=same; L19; R19; }
-  { rank=same; L20; R20; }
 }
