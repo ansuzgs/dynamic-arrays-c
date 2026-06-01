@@ -18,7 +18,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 |---|-------|-------------|------|
 | 1 | [Hello, Array](https://pablogs.dev/posts/post-01-hello-array) | `malloc`, `free`, struct-based ownership | [post_01.c](src/post_01.c) |
 | 2 | [Growing Pains](https://pablogs.dev/posts/post-02-growing-pain) | `realloc`, automatic capacity management | [post_02.c](src/post_02.c) |
-| 3 | The Growth Factor Debate | Amortized analysis, 1.5× vs 2× | *coming soon* |
+| 3 | [The Growth Factor Debate](https://pablogs.dev/posts/post-03-growth-factor) | Amortized analysis, 1.5× vs 2× | [post_03.c](src/post_03.c) |
 | 4 | Type Erasure | `void*` generics, `memcpy`, byte-level layout | *coming soon* |
 | 5 | Type-Safe Wrappers | Macros, `_Generic` (C11), compile-time checks | *coming soon* |
 | 6 | Error Handling Strategies | OOM recovery, preserving array state | *coming soon* |
