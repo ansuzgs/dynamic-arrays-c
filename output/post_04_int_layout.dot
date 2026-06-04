@@ -1,0 +1,42 @@
+digraph GenericArray {
+  rankdir=LR;
+  bgcolor="#fafafa";
+  node [fontname="Courier", fontsize=11];
+  edge [fontname="Courier", fontsize=9];
+  metadata [shape=record, style=filled, fillcolor="#e8f4fd",
+    label="{Array (metadata)|data: void* \u2192 0x6436a28da2e0|size: 5|capacity: 8|element_size: 4}"];
+  subgraph cluster_array_view {
+    label="Array's view (bytes)";
+    style=dashed; color="#999999";
+    fontname="Courier"; fontsize=10;
+    bytes [shape=none, margin=0, label=<
+      <table border="0" cellborder="1" cellspacing="0" cellpadding="4" bgcolor="#fff3cd">
+        <tr><td>+0</td><td>4 B</td></tr>
+        <tr><td>+4</td><td>4 B</td></tr>
+        <tr><td>+8</td><td>4 B</td></tr>
+        <tr><td>+12</td><td>4 B</td></tr>
+        <tr><td>+16</td><td>4 B</td></tr>
+        <tr><td>unused</td><td>3 slots</td></tr>
+      </table>
+    >];
+  }
+  subgraph cluster_caller_view {
+    label="Caller's view (int)";
+    style=dashed; color="#28a745";
+    fontname="Courier"; fontsize=10;
+    typed [shape=none, margin=0, label=<
+      <table border="0" cellborder="1" cellspacing="0" cellpadding="4" bgcolor="#d4edda">
+        <tr><td>[0]</td><td>10</td></tr>
+        <tr><td>[1]</td><td>20</td></tr>
+        <tr><td>[2]</td><td>30</td></tr>
+        <tr><td>[3]</td><td>40</td></tr>
+        <tr><td>[4]</td><td>50</td></tr>
+      </table>
+    >];
+  }
+  metadata -> bytes [label="  void*\n(opaque)", style=bold, color="#0066cc"];
+  bytes -> typed [label="  cast to int*\n(caller restores type)", style=dashed, color="#28a745"];
+  legend [shape=note, style=filled, fillcolor="#f8f9fa",
+    fontsize=9,
+    label="Type Erasure:\nArray stores raw bytes.\nCaller casts back to original type.\nelement_size = 4 bytes"];
+}

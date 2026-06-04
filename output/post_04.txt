@@ -1,0 +1,180 @@
+═══════════════════════════════════════════════════════════════
+  Post 4: Type Erasure — Generic Arrays with void* and memcpy
+═══════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════
+  Demo 1: Array<int>   (element_size = 4 bytes)
+═══════════════════════════════════════════════════════════════
+  push(10)
+  push(20)
+  push(30)
+  push(40)
+  push(50)
+
+╔══════════════════════════════════════════════════════════════╗
+║  Array<int> after 5 pushes                                                        ║
+╠══════════════════════════════════════════════════════════════╣
+║  type: void* (erased)    element_size: 4    bytes          ║
+║  size: 5                 capacity: 8                       ║
+║  data: 0x6436a28da2e0      reallocs: 1                    ║
+╠══════════════════════════════════════════════════════════════╣
+║  Byte-level memory layout:                                  ║
+║                                                              ║
+║  [0] offset +0    │ 0a 00 00 00                  │ 10
+║  [1] offset +4    │ 14 00 00 00                  │ 20
+║  [2] offset +8    │ 1e 00 00 00                  │ 30
+║  [3] offset +12   │ 28 00 00 00                  │ 40
+║  [4] offset +16   │ 32 00 00 00                  │ 50
+║  [·] offset +20   │ -- -- -- --                  │ (unused)
+║  [·] offset +24   │ -- -- -- --                  │ (unused)
+║  [·] offset +28   │ -- -- -- --                  │ (unused)
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  20B used / 32B allocated = 62.5% utilization
+╚══════════════════════════════════════════════════════════════╝
+
+  Retrieval (caller casts void* → int*):
+    arr[0] = 10
+    arr[1] = 20
+    arr[2] = 30
+    arr[3] = 40
+    arr[4] = 50
+  → DOT written to output/post_04_int_layout.dot
+
+═══════════════════════════════════════════════════════════════
+  Demo 2: Array<double>   (element_size = 8 bytes)
+═══════════════════════════════════════════════════════════════
+  push(3.140)
+  push(2.718)
+  push(1.414)
+  push(1.732)
+
+╔══════════════════════════════════════════════════════════════╗
+║  Array<double> after 4 pushes                                                        ║
+╠══════════════════════════════════════════════════════════════╣
+║  type: void* (erased)    element_size: 8    bytes          ║
+║  size: 4                 capacity: 4                       ║
+║  data: 0x6436a28da2e0      reallocs: 0                    ║
+╠══════════════════════════════════════════════════════════════╣
+║  Byte-level memory layout:                                  ║
+║                                                              ║
+║  [0] offset +0    │ 1f 85 eb 51 b8 1e 09 40      │ 3.14
+║  [1] offset +8    │ 58 39 b4 c8 76 be 05 40      │ 2.72
+║  [2] offset +16   │ 39 b4 c8 76 be 9f f6 3f      │ 1.41
+║  [3] offset +24   │ 83 c0 ca a1 45 b6 fb 3f      │ 1.73
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization
+╚══════════════════════════════════════════════════════════════╝
+
+  Retrieval (caller casts void* → double*):
+    arr[0] = 3.140
+    arr[1] = 2.718
+    arr[2] = 1.414
+    arr[3] = 1.732
+
+═══════════════════════════════════════════════════════════════
+  Demo 3: Array<Record>   (element_size = 20 bytes)
+═══════════════════════════════════════════════════════════════
+  push({id=1, "Alice"})
+  push({id=2, "Bob"})
+  push({id=3, "Charlie"})
+
+╔══════════════════════════════════════════════════════════════╗
+║  Array<Record> after 3 pushes                                                        ║
+╠══════════════════════════════════════════════════════════════╣
+║  type: void* (erased)    element_size: 20   bytes          ║
+║  size: 3                 capacity: 4                       ║
+║  data: 0x6436a28da4f0      reallocs: 0                    ║
+╠══════════════════════════════════════════════════════════════╣
+║  Byte-level memory layout:                                  ║
+║                                                              ║
+║  [0] offset +0    │ 01 00 00 00 41 6c 69 63 65 00 00 00 00 00 00 00 00 00 00 00 │ {id=1, "Alice"}
+║  [1] offset +20   │ 02 00 00 00 42 6f 62 00 00 00 00 00 00 00 00 00 00 00 00 00 │ {id=2, "Bob"}
+║  [2] offset +40   │ 03 00 00 00 43 68 61 72 6c 69 65 00 00 00 00 00 00 00 00 00 │ {id=3, "Charlie"}
+║  [·] offset +60   │ -- -- -- --                  │ (unused)
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  60B used / 80B allocated = 75.0% utilization
+╚══════════════════════════════════════════════════════════════╝
+
+  Retrieval (caller casts void* → Record*):
+    arr[0] = {id=1, name="Alice"}
+    arr[1] = {id=2, name="Bob"}
+    arr[2] = {id=3, name="Charlie"}
+
+  Byte comparison — same array code, different element_size:
+  ┌────────────┬───────────────┬───────────────────────────┐
+  │ Type       │ element_size  │ Address of element [1]    │
+  ├────────────┼───────────────┼───────────────────────────┤
+  │ int        │ 4 bytes      │ base + 1 × 4  = base + 4  │
+  │ double     │ 8 bytes      │ base + 1 × 8  = base + 8  │
+  │ Record     │ 20 bytes     │ base + 1 × 20 = base + 20 │
+  └────────────┴───────────────┴───────────────────────────┘
+  → DOT written to output/post_04_layout.dot
+
+═══════════════════════════════════════════════════════════════
+  Demo 4: Pointer arithmetic walkthrough
+═══════════════════════════════════════════════════════════════
+
+  element_size = 20 bytes (sizeof(Record))
+  base address = 0x6436a28da4f0
+
+  element[0]:
+    formula:  (char*)0x6436a28da4f0 + 0 × 20
+    =         (char*)0x6436a28da4f0 + 0
+    =         0x6436a28da4f0
+    value:    {id=1, name="Alice"}
+
+  element[1]:
+    formula:  (char*)0x6436a28da4f0 + 1 × 20
+    =         (char*)0x6436a28da4f0 + 20
+    =         0x6436a28da504
+    value:    {id=2, name="Bob"}
+
+  element[2]:
+    formula:  (char*)0x6436a28da4f0 + 2 × 20
+    =         (char*)0x6436a28da4f0 + 40
+    =         0x6436a28da518
+    value:    {id=3, name="Charlie"}
+
+
+═══════════════════════════════════════════════════════════════
+  Demo 5: Type mismatch — what goes wrong
+═══════════════════════════════════════════════════════════════
+
+  Created array with element_size = 4 (for int)
+  Storing a double (3.14159, 8 bytes) — THIS IS A BUG!
+  memcpy will copy only 4 of 8 bytes.
+
+  Read back as int:    -266631570  (garbage — half the bytes of pi)
+  Read back as double: 0.00000  (truncated — missing 4 bytes)
+
+  Lesson: type erasure trades compile-time safety for flexibility.
+  If you pass the wrong sizeof(), the compiler won't help you.
+  Post 5 introduces macros that restore type safety.
+
+═══════════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════════
+
+  Q: How do you access element i in a void* array with
+     element_size = 20? Write the pointer arithmetic.
+
+  A: void *elem = (char *)arr->data + i * 20;
+
+     Cast data to char* (1-byte unit), then advance
+     i * 20 bytes. The result is a void* pointing to
+     the start of element i. Cast to the actual type
+     to read the value:
+
+       MyStruct *s = (MyStruct *)elem;
+       printf("%d\n", s->field);
+
+     Without element_size, you can't compute this offset.
+     That single field is what makes generic arrays possible.
+
+═══════════════════════════════════════════════════════════════
+  End of Post 4. Next: type-safe wrapper macros.
+═══════════════════════════════════════════════════════════════
+
