@@ -1,0 +1,54 @@
+digraph TypeSafeWrappers {
+  rankdir=TB;
+  bgcolor="#fafafa";
+  node [fontname="Courier", fontsize=11];
+  edge [fontname="Courier", fontsize=9];
+  compound=true;
+
+  subgraph cluster_macro_api {
+    label="User-Facing API (Type-Safe Macros)";
+    style=filled; fillcolor="#d4edda"; color="#28a745";
+    fontname="Courier"; fontsize=12;
+
+    m_create [label="ARRAY_CREATE(type, cap)", shape=box, style=filled, fillcolor="#c3e6cb"];
+    m_push   [label="ARRAY_PUSH(arr, type, val)", shape=box, style=filled, fillcolor="#c3e6cb"];
+    m_get    [label="ARRAY_GET(arr, type, idx)", shape=box, style=filled, fillcolor="#c3e6cb"];
+    m_set    [label="ARRAY_SET(arr, type, idx, val)", shape=box, style=filled, fillcolor="#c3e6cb"];
+    m_for    [label="ARRAY_FOREACH(arr, type, ptr)", shape=box, style=filled, fillcolor="#c3e6cb"];
+  }
+
+  subgraph cluster_checks {
+    label="Compile-Time + Runtime Checks";
+    style=filled; fillcolor="#fff3cd"; color="#ffc107";
+    fontname="Courier"; fontsize=12;
+
+    chk_sizeof [label="sizeof(type) == arr->element_size?", shape=diamond, style=filled, fillcolor="#ffeeba"];
+    chk_tmp    [label="type tmp = value;\n(compiler type-checks)", shape=box, style=filled, fillcolor="#ffeeba"];
+  }
+
+  subgraph cluster_internal {
+    label="Internal API (void* + memcpy)";
+    style=filled; fillcolor="#e8f4fd"; color="#0066cc";
+    fontname="Courier"; fontsize=12;
+
+    i_create [label="array_create(sizeof, cap)", shape=box, style=filled, fillcolor="#b8daff"];
+    i_push   [label="array_push(arr, &tmp)", shape=box, style=filled, fillcolor="#b8daff"];
+    i_get    [label="(type*)array_get(arr, idx)", shape=box, style=filled, fillcolor="#b8daff"];
+    i_set    [label="array_set(arr, idx, &tmp)", shape=box, style=filled, fillcolor="#b8daff"];
+    i_elem   [label="element_at(arr, i)\n(char*)data + i*elem_size", shape=box, style=filled, fillcolor="#b8daff"];
+  }
+
+  m_create -> i_create [label="  sizeof(type)"];
+  m_push   -> chk_sizeof [label="  check size"];
+  m_push   -> chk_tmp [label="  create tmp"];
+  chk_tmp  -> i_push [label="  &tmp"];
+  m_get    -> chk_sizeof;
+  chk_sizeof -> i_get [label="  cast result"];
+  m_set    -> chk_sizeof;
+  chk_sizeof -> i_set;
+  m_for    -> i_elem [label="  typed iteration"];
+
+  legend [shape=note, style=filled, fillcolor="#f8f9fa",
+    fontsize=9,
+    label="Pattern: Type-Safe Wrappers\n\nUser writes: ARRAY_PUSH(arr, int, 42)\nCompiler sees: int tmp = 42;\nRuntime checks: sizeof(int)==element_size\nExecutes: memcpy(slot, &tmp, 4)"];
+}

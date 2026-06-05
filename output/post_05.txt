@@ -1,0 +1,215 @@
+═══════════════════════════════════════════════════════════════════
+  Post 5: Type-Safe Wrappers — Macros That Protect Your void*
+═══════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════
+  Demo 1: Macro API vs Raw void* API (side by side)
+═══════════════════════════════════════════════════════════════════
+
+  --- The old way (Post 4): raw void* ---
+
+    Array *arr = array_create(sizeof(int), 4);
+    int x = 42;
+    array_push(arr, &x);                    // verbose
+    int *val = (int *)array_get(arr, 0);    // unsafe cast
+    result: 42
+
+  --- The new way (Post 5): type-safe macros ---
+
+    Array *arr = ARRAY_CREATE(int, 4);
+    ARRAY_PUSH(arr, int, 42);               // one expression
+    int *val = ARRAY_GET(arr, int, 0);       // typed pointer
+    result: 42
+
+╔══════════════════════════════════════════════════════════════════╗
+║  Array<int> via ARRAY_PUSH macro                                 ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Macro API:  ARRAY_CREATE(int, 8)                          ║
+║  Internal:   void* (erased)   element_size: 4    bytes         ║
+║  size: 5       capacity: 8       reallocs: 1                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  API mapping (macro → internal):                                ║
+║    ARRAY_PUSH(arr, int, val)  → { int tmp=val; array_push(arr,&tmp); }
+║    ARRAY_GET(arr, int, i)     → (int*)array_get(arr, i)               
+╠══════════════════════════════════════════════════════════════════╣
+║  Memory layout:                                                 ║
+║  [0] +0    │ 2a 00 00 00              │ 42
+║  [1] +4    │ 63 00 00 00              │ 99
+║  [2] +8    │ 07 00 00 00              │ 7
+║  [3] +12   │ 00 01 00 00              │ 256
+║  [4] +16   │ f3 ff ff ff              │ -13
+║  [·] +20   │ -- -- -- --              │ (unused)
+║  [·] +24   │ -- -- -- --              │ (unused)
+║  [·] +28   │ -- -- -- --              │ (unused)
+╠══════════════════════════════════════════════════════════════════╣
+║  20B used / 32B allocated = 62.5% utilization               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════
+  Demo 2: Type mismatch detection
+═════════════════════════════════════════════════════ARRAY_PUSH: type size mismatch (sizeof(double)=8, element_size=4) at src/post_05.c:639
+ARRAY_GET: type size mismatch (sizeof(double)=8, element_size=4) at src/post_05.c:643
+══════════════
+
+  Created array with ARRAY_CREATE(int, 4)
+  Stored: 10, 20 via ARRAY_PUSH(arr, int, ...)
+
+  Now attempting: ARRAY_PUSH(arr, double, 3.14)
+  Expected: error message (sizeof(double)=8 != element_size=4)
+
+
+  Now attempting: ARRAY_GET(arr, double, 0)
+  Expected: error + NULL return
+
+  Result: NULL (correct!)
+
+  Array is UNCHANGED — mismatch was caught before corruption:
+
+╔══════════════════════════════════════════════════════════════════╗
+║  Array<int> after rejected double push                           ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Macro API:  ARRAY_CREATE(int, 4)                          ║
+║  Internal:   void* (erased)   element_size: 4    bytes         ║
+║  size: 2       capacity: 4       reallocs: 0                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  API mapping (macro → internal):                                ║
+║    ARRAY_PUSH(arr, int, val)  → { int tmp=val; array_push(arr,&tmp); }
+║    ARRAY_GET(arr, int, i)     → (int*)array_get(arr, i)               
+╠══════════════════════════════════════════════════════════════════╣
+║  Memory layout:                                                 ║
+║  [0] +0    │ 0a 00 00 00              │ 10
+║  [1] +4    │ 14 00 00 00              │ 20
+║  [·] +8    │ -- -- -- --              │ (unused)
+║  [·] +12   │ -- -- -- --              │ (unused)
+╠══════════════════════════════════════════════════════════════════╣
+║  8B used / 16B allocated = 50.0% utilization               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════
+  Demo 3: Structs with type-safe macros
+═══════════════════════════════════════════════════════════════════
+
+  Pushed 3 records via ARRAY_PUSH(arr, Record, ...)
+
+╔══════════════════════════════════════════════════════════════════╗
+║  Array<Record> via type-safe macros                              ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Macro API:  ARRAY_CREATE(Record, 4)                          ║
+║  Internal:   void* (erased)   element_size: 20   bytes         ║
+║  size: 3       capacity: 4       reallocs: 0                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  API mapping (macro → internal):                                ║
+║    ARRAY_PUSH(arr, Record, val)  → { Record tmp=val; array_push(arr,&tmp); }
+║    ARRAY_GET(arr, Record, i)     → (Record*)array_get(arr, i)               
+╠══════════════════════════════════════════════════════════════════╣
+║  Memory layout:                                                 ║
+║  [0] +0    │ 01 00 00 00 41 6c 69 63 65 00 00 00 00 00 00 00 00 00 00 00 │ {id=1, "Alice"}
+║  [1] +20   │ 02 00 00 00 42 6f 62 00 00 00 00 00 00 00 00 00 00 00 00 00 │ {id=2, "Bob"}
+║  [2] +40   │ 03 00 00 00 43 68 61 72 6c 69 65 00 00 00 00 00 00 00 00 00 │ {id=3, "Charlie"}
+║  [·] +60   │ -- -- -- --              │ (unused)
+╠══════════════════════════════════════════════════════════════════╣
+║  60B used / 80B allocated = 75.0% utilization               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+  Retrieval via ARRAY_GET(arr, Record, i):
+    arr[0] = {id=1, name="Alice"}
+    arr[1] = {id=2, name="Bob"}
+    arr[2] = {id=3, name="Charlie"}
+
+═══════════════════════════════════════════════════════════════════
+  Demo 4: ARRAY_FOREACH iteration
+═══════════════════════════════════════════════════════════════════
+
+  Array contains: 10 20 30 40 50 60 
+  Sum via ARRAY_FOREACH: 210
+
+  ARRAY_FOREACH(arr, int, val) { sum += *val; }
+  expands to:
+    for (size_t _i = 0; _i < arr->size; _i++)
+      for (int *val = (int*)element_at(arr, _i); val; val=NULL)
+        { sum += *val; }
+
+═══════════════════════════════════════════════════════════════════
+  Demo 5: What the preprocessor actually generates
+═══════════════════════════════════════════════════════════════════
+
+  Source code:
+    ARRAY_PUSH(arr, int, 42);
+
+  After preprocessing (conceptual):
+    do {
+        if (sizeof(int) != (arr)->element_size) {
+            fprintf(stderr, "ARRAY_PUSH: type size mismatch (sizeof(int)=4, element_size=%zu)\n",
+                    (arr)->element_size);
+        } else {
+            int _push_tmp = (42);
+            array_push((arr), &_push_tmp);
+        }
+    } while (0);
+
+  Key observations:
+    1. do { } while(0) makes the macro a single statement
+    2. sizeof(int) is computed at COMPILE time (always 4)
+    3. arr->element_size is checked at RUNTIME
+    4. int _push_tmp = 42; lets the compiler type-check the assignment
+    5. &_push_tmp is passed to void* array_push — type erased
+    6. #type stringifies the type name for error messages
+
+  Source code:
+    int *val = ARRAY_GET(arr, int, 0);
+
+  After preprocessing (conceptual):
+    int *val = ( sizeof(int) != (arr)->element_size
+                 ? ( fprintf(stderr, "..."), (int *)NULL )
+                 : (int *)array_get((arr), (0)) );
+
+  Key observations:
+    1. ARRAY_GET is an EXPRESSION, not a statement (returns a value)
+    2. Ternary operator: check first, then either error or cast
+    3. Comma operator: print error AND return NULL
+    4. The cast (int*) provides typed access — no manual cast
+
+═══════════════════════════════════════════════════════════════════
+  Demo 6: ARRAY_SET with type safety
+═══════════════════════════�ARRAY_SET: type size mismatch (sizeof(double)=8, element_size=4) at src/post_05.c:800
+�═══════════════════════════════════════
+
+  Before: 100 200 300 
+  After ARRAY_SET(arr, int, 1, 999): 100 999 300 
+
+  Attempting ARRAY_SET(arr, double, 0, 1.5):
+  Array unchanged: 100 999 300 
+  → DOT written to output/post_05_api_layers.dot
+
+═══════════════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════════════
+
+  Q: Write a macro ARRAY_GET(arr, type, index) that returns
+     a typed pointer. What happens if the user passes the
+     wrong type?
+
+  A: #define ARRAY_GET(arr, type, index)                  \
+       ( sizeof(type) != (arr)->element_size              \
+         ? ( fprintf(stderr, "type mismatch"), (type*)NULL ) \
+         : (type *)array_get((arr), (index)) )
+
+     If the user passes the wrong type:
+     - sizeof(wrong_type) != arr->element_size
+     - The ternary takes the error branch
+     - An error is printed with the mismatched sizes
+     - NULL is returned (not a corrupted pointer)
+     - The array data is never accessed with the wrong type
+
+     What it CANNOT catch:
+     - Types with the same sizeof (int vs float on most
+       platforms, both 4 bytes). The size check passes,
+       but the bytes are interpreted differently.
+     - This is a fundamental limitation of size-only checking.
+       For same-size type safety, you'd need typeof() (GCC)
+       or _Generic (C11) — discussed in the tradeoffs section.
+
+═══════════════════════════════════════════════════════════════════
+  End of Post 5. Next: error handling strategies.
+═══════════════════════════════════════════════════════════════════
+
