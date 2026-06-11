@@ -1,0 +1,289 @@
+═══════════════════════════════════════════════════════════
+  Post 6: When Things Go Wrong —
+          Error Handling Strategies in C
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 1: Error codes — checking every return value
+═══════════════════════════════════════════════════════════
+
+  Created array with capacity 4.
+  Pushing 6 values (triggers growth at push #5):
+
+    push(100) → success
+    push(200) → success
+    push(300) → success
+    push(400) → success
+    push(500) → success  ← triggered realloc (cap 4→8)
+    push(600) → success
+╔══════════════════════════════════════════════════════════╗
+║  After 6 successful pushes                               ║
+║  ✓ Last operation: success                                ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 1         ║
+║  size: 6         capacity: 8                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 100                                     ║
+║  [ 1] +4     │ 200                                     ║
+║  [ 2] +8     │ 300                                     ║
+║  [ 3] +12    │ 400                                     ║
+║  [ 4] +16    │ 500                                     ║
+║  [ 5] +20    │ 600                                     ║
+║  [ 6] +24    │ (unused)                                ║
+║  [ 7] +28    │ (unused)                                ║
+╠══════════════════════════════════════════════════════════╣
+║  24B used / 32B allocated = 75.0% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+  Pushing to NULL array:
+    push(42) → NULL pointer argument
+
+  Inserting at index 100 (out of bounds):
+    insert(100, 999) → index out of bounds
+
+  Inserting 50 at index 0 (shifts all elements right):
+    insert(0, 50) → success
+╔══════════════════════════════════════════════════════════╗
+║  After insert(0, 50)                                     ║
+║  ✓ Last operation: success                                ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 1         ║
+║  size: 7         capacity: 8                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 50                                      ║
+║  [ 1] +4     │ 100                                     ║
+║  [ 2] +8     │ 200                                     ║
+║  [ 3] +12    │ 300                                     ║
+║  [ 4] +16    │ 400                                     ║
+║  [ 5] +20    │ 500                                     ║
+║  [ 6] +24    │ 600                                     ║
+║  [ 7] +28    │ (unused)                                ║
+╠══════════════════════════════════════════════════════════╣
+║  28B used / 32B allocated = 87.5% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════
+  Demo 2: Array state preserved after failed operation
+═══════════════════════════════════════════════════════════
+
+  We cannot easily force a real realloc failure in a demo,
+  so we demonstrate the principle with overflow detection.
+
+  Array filled with [10, 20, 30, 40]:
+╔══════════════════════════════════════════════════════════╗
+║  Before failed operation                                 ║
+║  ✓ Last operation: success                                ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 10                                      ║
+║  [ 1] +4     │ 20                                      ║
+║  [ 2] +8     │ 30                                      ║
+║  [ 3] +12    │ 40                                      ║
+╠══════════════════════════════════════════════════════════╣
+║  16B used / 16B allocated = 100.0% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+  Attempted insert at index 100: index out of bounds
+
+  ┌─ State comparison: after failed insert
+  │  data pointer:  SAME ✓ (before=0x5b5adedc1310, after=0x5b5adedc1310)
+  │  size:          SAME ✓ (before=4, after=4)
+  │  capacity:      SAME ✓ (before=4, after=4)
+  │  first element: SAME ✓ (before=10, after=10)
+  │  last element:  SAME ✓ (before=40, after=40)
+  └─
+
+╔══════════════════════════════════════════════════════════╗
+║  After failed operation — unchanged                    ║
+║  ⚠ Last operation: index out of bounds                    ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 10                                      ║
+║  [ 1] +4     │ 20                                      ║
+║  [ 2] +8     │ 30                                      ║
+║  [ 3] +12    │ 40                                      ║
+╠══════════════════════════════════════════════════════════╣
+║  16B used / 16B allocated = 100.0% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+  Array still works — pushing 50:
+    push(50) → success
+╔══════════════════════════════════════════════════════════╗
+║  Array recovered, push succeeded                         ║
+║  ✓ Last operation: success                                ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 1         ║
+║  size: 5         capacity: 8                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 10                                      ║
+║  [ 1] +4     │ 20                                      ║
+║  [ 2] +8     │ 30                                      ║
+║  [ 3] +12    │ 40                                      ║
+║  [ 4] +16    │ 50                                      ║
+║  [ 5] +20    │ (unused)                                ║
+║  [ 6] +24    │ (unused)                                ║
+║  [ 7] +28    │ (unused)                                ║
+╠══════════════════════════════════════════════════════════╣
+║  20B used / 32B allocated = 62.5% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════
+  Demo 3: Error callbacks — centralized error handling
+═══════════════════════════════════════════════════════════
+
+  Registered error callback. Now triggering some errors:
+
+  1. Pushing to NULL array:
+    [CALLBACK #1] error=-1 (NULL pointer argument)
+                  msg: array_push: NULL argument
+                  at:  src/post_06.c:290
+
+  2. Inserting at invalid index:
+    [CALLBACK #2] error=-3 (index out of bounds)
+                  msg: array_insert: index out of range
+                  at:  src/post_06.c:338
+
+  3. Creating array with overflowing size:
+    [CALLBACK #3] error=-4 (capacity overflow)
+                  msg: array_create: capacity * element_size overflows
+                  at:  src/post_06.c:139
+
+  Total callbacks fired: 3
+
+  Notice: the callback logged the errors, but the functions
+  still returned error codes. The callback is for monitoring;
+  error codes are for control flow.
+
+═══════════════════════════════════════════════════════════
+  Demo 4: Three error handling strategies compared
+═══════════════════════════════════════════════════════════
+
+  Strategy A: Return Codes (what we use)
+  ─────────────────────────────────────────
+  ArrayError err = array_push(arr, &val);
+  if (err != ARRAY_OK) {
+      fprintf(stderr, "push failed: %s\n",
+              array_error_str(err));
+      // handle error: retry, degrade, abort
+  }
+
+  Pros: explicit, caller decides how to react,
+        no hidden control flow, debugger-friendly.
+  Cons: verbose (every call needs an if-check),
+        easy to forget checking (ignoring the return).
+
+  ───────────────────────────────────────────
+  Strategy B: Callback (our optional addition)
+  ─────────────────────────────────────────────
+  array_set_error_callback(my_handler);
+  array_push(arr, &val);  // handler called on error
+
+  Pros: centralized logging, no code at each call site,
+        good for metrics and monitoring.
+  Cons: doesn't replace return-code checking,
+        global state (callback pointer),
+        complex if handler needs context.
+
+  ───────────────────────────────────────────
+  Strategy C: Abort (not recommended)
+  ─────────────────────────────────────────
+  void array_push_or_die(Array *arr, const void *elem) {
+      if (array_push(arr, elem) != ARRAY_OK) {
+          fprintf(stderr, "FATAL: push failed\n");
+          abort();
+      }
+  }
+
+  Pros: dead simple, no error paths to test,
+        fine for quick prototypes and scripts.
+  Cons: no recovery possible, unsuitable for libraries,
+        crashes the entire program on ANY allocation failure,
+        makes the library hostile to embedders.
+
+  ═══════════════════════════════════════════
+  Our choice: A (return codes) as primary mechanism,
+  with B (callback) as optional monitoring layer.
+  Never C for library code — let the caller decide.
+  ═══════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 5: ARRAY_PUSH_ERR — error codes from macro layer
+═══════════════════════════════════════════════════════════
+
+  Using ARRAY_PUSH_ERR to capture error codes:
+
+    ARRAY_PUSH_ERR(arr, int, 10, err) → success
+    ARRAY_PUSH_ERR(arr, int, 20, err) → success
+    ARRAY_PUSH_ERR(arr, int, 30, err) → success
+    ARRAY_PUSH_ERR(arr, int, 40, err) → success
+    ARRAY_PUSH_ERR(arr, int, 50, err) → success
+
+  Attempting type mismatch:
+    ARRAY_PUSH_ERR(arr, double, 3.14, err) → type size mismatch
+
+  Result: type mismatch detected BEFORE calling array_push.
+  The macro layer catches it; the void* layer never sees it.
+
+╔══════════════════════════════════════════════════════════╗
+║  Final state (only ints pushed successfully)             ║
+║  ✓ Last operation: success                                ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 1         ║
+║  size: 5         capacity: 8                               ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 10                                      ║
+║  [ 1] +4     │ 20                                      ║
+║  [ 2] +8     │ 30                                      ║
+║  [ 3] +12    │ 40                                      ║
+║  [ 4] +16    │ 50                                      ║
+║  [ 5] +20    │ (unused)                                ║
+║  [ 6] +24    │ (unused)                                ║
+║  [ 7] +28    │ (unused)                                ║
+╠══════════════════════════════════════════════════════════╣
+║  20B used / 32B allocated = 62.5% utilization║
+╚══════════════════════════════════════════════════════════╝
+
+DOT file written to output/post_06_error_flow.dot
+Render with: dot -Tsvg output/post_06_error_flow.dot -o output/post_06_error_flow.svg
+
+═══════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════
+
+  Q: If realloc fails, what value does arr->data still
+     hold? Why must you use a temporary pointer?
+
+  A: arr->data still holds its ORIGINAL value — the
+     pointer to the existing, valid buffer with all
+     elements intact.
+
+     When realloc fails, it returns NULL but does NOT
+     free the original block. The old memory is still
+     allocated and usable.
+
+     You must use a temporary pointer because:
+
+       void *tmp = realloc(arr->data, new_size);
+       if (!tmp) return ERR;  // arr->data unchanged!
+       arr->data = tmp;        // update only on success
+
+     If you wrote:
+       arr->data = realloc(arr->data, new_size); // WRONG
+
+     ...and realloc returned NULL, then:
+       - arr->data is now NULL
+       - The old buffer is still allocated (leaked)
+       - All your data is lost AND memory is leaked
+       - Double failure: data loss + resource leak
+
+     The temporary pointer costs one extra local variable.
+     It prevents data loss. Always use it.
+
+═══════════════════════════════════════════════════════════
+  End of Post 6. Next: function pointers and callbacks.
+═══════════════════════════════════════════════════════════
+

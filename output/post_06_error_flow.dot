@@ -1,0 +1,47 @@
+digraph ErrorFlow {
+  rankdir=TB;
+  graph [fontname="Helvetica", fontsize=12, bgcolor="#fafafa", label="array_push() Error Flow\nPost 6: When Things Go Wrong", labelloc=t];
+  node [fontname="Helvetica", fontsize=10, style=filled];
+  edge [fontname="Helvetica", fontsize=9];
+
+  entry [label="array_push(arr, elem)", shape=oval, fillcolor="#e3f2fd"];
+
+  null_check [label="arr == NULL\nor elem == NULL?", shape=diamond, fillcolor="#fff9c4"];
+  need_grow [label="size >= capacity?", shape=diamond, fillcolor="#fff9c4"];
+  overflow [label="new_cap * elem_size\noverflows?", shape=diamond, fillcolor="#fff9c4"];
+  realloc_call [label="tmp = realloc(\n  arr->data,\n  new_size)", shape=box, fillcolor="#e8f5e9"];
+  realloc_ok [label="tmp != NULL?", shape=diamond, fillcolor="#fff9c4"];
+
+  update_ptr [label="arr->data = tmp\narr->capacity = new_cap", shape=box, fillcolor="#c8e6c9"];
+  do_copy [label="memcpy(slot, elem,\n  element_size)\narr->size++", shape=box, fillcolor="#c8e6c9"];
+  success [label="return ARRAY_OK", shape=oval, fillcolor="#a5d6a7"];
+
+  err_null [label="return\nARRAY_ERR_NULL\n\nArray: UNCHANGED", shape=box, fillcolor="#ffcdd2"];
+  err_overflow [label="return\nARRAY_ERR_OVERFLOW\n\nArray: UNCHANGED", shape=box, fillcolor="#ffcdd2"];
+  err_alloc [label="return\nARRAY_ERR_ALLOC\n\narr->data: VALID\nOld elements: INTACT", shape=box, fillcolor="#ffcdd2"];
+
+  entry -> null_check;
+  null_check -> need_grow [label="no", color="#2e7d32"];
+  need_grow -> do_copy [label="no\n(room exists)", color="#2e7d32"];
+  need_grow -> overflow [label="yes", color="#f57c00"];
+  overflow -> realloc_call [label="no", color="#2e7d32"];
+  realloc_call -> realloc_ok;
+  realloc_ok -> update_ptr [label="yes", color="#2e7d32"];
+  update_ptr -> do_copy;
+  do_copy -> success;
+
+  null_check -> err_null [label="yes", color="#c62828", style=dashed];
+  overflow -> err_overflow [label="yes", color="#c62828", style=dashed];
+  realloc_ok -> err_alloc [label="no (NULL)", color="#c62828", style=dashed];
+
+  subgraph cluster_legend {
+    label="Legend";
+    style=rounded; color="#bdbdbd";
+    fontname="Helvetica"; fontsize=10;
+    leg_ok [label="Success", shape=box, fillcolor="#c8e6c9"];
+    leg_fail [label="Failure\n(state preserved)", shape=box, fillcolor="#ffcdd2"];
+    leg_decide [label="Decision", shape=diamond, fillcolor="#fff9c4"];
+    leg_ok -> leg_fail [style=invis];
+    leg_fail -> leg_decide [style=invis];
+  }
+}

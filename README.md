@@ -21,7 +21,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 | 3 | [The Growth Factor Debate](https://pablogs.dev/posts/post-03-growth-factor) | Amortized analysis, 1.5× vs 2× | [post_03.c](src/post_03.c) |
 | 4 | [Type Erasure](https://pablogs.dev/posts/type-erasure-generic-array-void-pointer-memcpy-c/) | `void*` generics, `memcpy`, byte-level layout | [post_04.c](src/post_04.c) |
 | 5 | [Type-Safe Wrappers](https://pablogs.dev/posts/type-safe-wrapper-macros-void-pointer-dynamic-array-c/) | Macros, `_Generic` (C11), compile-time checks | [post_05](src/post_05.c) |
-| 6 | Error Handling Strategies | OOM recovery, preserving array state | *coming soon* |
+| 6 | [Error Handling Strategies](https://pablogs.dev/posts/error-handling-strategies-realloc-failure-dynamic-array-c/) | OOM recovery, preserving array state | [post_06.c](src/post_06.c) |
 | 7 | Function Pointers and Callbacks | Comparators, destructors, `foreach` | *coming soon* |
 | 8 | Bounds Checking and Defensive APIs | Debug vs release, safe accessors | *coming soon* |
 | 9 | Insert, Remove, and the Cost of Shifting | `memmove`, swap-remove | *coming soon* |
