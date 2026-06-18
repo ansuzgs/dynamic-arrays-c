@@ -1,0 +1,294 @@
+═══════════════════════════════════════════════════════════
+  Post 7: Function Pointers and Callbacks —
+          Sort, Search, Destroy
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 1: Sorting an array of integers
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Before sort                                             ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 8         capacity: 8                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 42                                      ║
+║  [ 1] +4     │ 17                                      ║
+║  [ 2] +8     │ 8                                       ║
+║  [ 3] +12    │ 99                                      ║
+║  [ 4] +16    │ 23                                      ║
+║  [ 5] +20    │ 71                                      ║
+║  [ 6] +24    │ 3                                       ║
+║  [ 7] +28    │ 55                                      ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+  Sorting ascending with compare_ints_asc...
+
+╔══════════════════════════════════════════════════════════╗
+║  After sort (ascending)                                  ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 8         capacity: 8                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 3                                       ║
+║  [ 1] +4     │ 8                                       ║
+║  [ 2] +8     │ 17                                      ║
+║  [ 3] +12    │ 23                                      ║
+║  [ 4] +16    │ 42                                      ║
+║  [ 5] +20    │ 55                                      ║
+║  [ 6] +24    │ 71                                      ║
+║  [ 7] +28    │ 99                                      ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+  Sorting descending with compare_ints_desc...
+
+╔══════════════════════════════════════════════════════════╗
+║  After sort (descending)                                 ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 8         capacity: 8                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ 99                                      ║
+║  [ 1] +4     │ 71                                      ║
+║  [ 2] +8     │ 55                                      ║
+║  [ 3] +12    │ 42                                      ║
+║  [ 4] +16    │ 23                                      ║
+║  [ 5] +20    │ 17                                      ║
+║  [ 6] +24    │ 8                                       ║
+║  [ 7] +28    │ 3                                       ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════
+  Demo 2: Sorting structs with different comparators
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Unsorted people                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  type: Person    element_size: 40    reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ {id=3, "Charlie", 87.5}                 ║
+║  [ 1] +40    │ {id=1, "Alice", 95.2}                   ║
+║  [ 2] +80    │ {id=4, "Diana", 72.0}                   ║
+║  [ 3] +120   │ {id=2, "Bob", 91.8}                     ║
+╠══════════════════════════════════════════════════════════╣
+║  160B used / 160B allocated = 100.0% utilization       ║
+╚══════════════════════════════════════════════════════════╝
+
+  Sorting by name (alphabetical)...
+
+╔══════════════════════════════════════════════════════════╗
+║  Sorted by name                                          ║
+╠══════════════════════════════════════════════════════════╣
+║  type: Person    element_size: 40    reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ {id=1, "Alice", 95.2}                   ║
+║  [ 1] +40    │ {id=2, "Bob", 91.8}                     ║
+║  [ 2] +80    │ {id=3, "Charlie", 87.5}                 ║
+║  [ 3] +120   │ {id=4, "Diana", 72.0}                   ║
+╠══════════════════════════════════════════════════════════╣
+║  160B used / 160B allocated = 100.0% utilization       ║
+╚══════════════════════════════════════════════════════════╝
+
+  Sorting by score (highest first)...
+
+╔══════════════════════════════════════════════════════════╗
+║  Sorted by score (desc)                                  ║
+╠══════════════════════════════════════════════════════════╣
+║  type: Person    element_size: 40    reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ {id=1, "Alice", 95.2}                   ║
+║  [ 1] +40    │ {id=2, "Bob", 91.8}                     ║
+║  [ 2] +80    │ {id=3, "Charlie", 87.5}                 ║
+║  [ 3] +120   │ {id=4, "Diana", 72.0}                   ║
+╠══════════════════════════════════════════════════════════╣
+║  160B used / 160B allocated = 100.0% utilization       ║
+╚══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════
+  Demo 3: Finding elements with predicates
+═══════════════════════════════════════════════════════════
+
+  Found person with id=2: "Bob" (score=91.8) at index 3
+
+  First person with score > 90.0: "Alice" (score=95.2) at index 1
+
+  Person with id=99: NOT FOUND
+
+═══════════════════════════════════════════════════════════
+  Demo 4: Iterating with foreach and context
+═══════════════════════════════════════════════════════════
+
+  Total of all scores: 345.0
+  Average: 86.2
+
+  Applying +5.0 curve to all scores...
+
+╔══════════════════════════════════════════════════════════╗
+║  After applying curve                                    ║
+╠══════════════════════════════════════════════════════════╣
+║  type: Person    element_size: 40    reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: NULL                                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ {id=1, "Alice", 90.0}                   ║
+║  [ 1] +40    │ {id=2, "Bob", 95.0}                     ║
+║  [ 2] +80    │ {id=3, "Charlie", 83.0}                 ║
+║  [ 3] +120   │ {id=4, "Diana", 97.0}                   ║
+╠══════════════════════════════════════════════════════════╣
+║  160B used / 160B allocated = 100.0% utilization       ║
+╚══════════════════════════════════════════════════════════╝
+
+  New total: 365.0 (was 345.0 before curve)
+  New average: 91.2
+
+═══════════════════════════════════════════════════════════
+  Demo 5: Destructors — cleaning up owned resources
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Heap-allocated strings (char*)                          ║
+╠══════════════════════════════════════════════════════════╣
+║  type: char*     element_size: 8     reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: SET (elements will be cleaned up)            ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ "Hello"                                 ║
+║  [ 1] +8     │ "World"                                 ║
+║  [ 2] +16    │ "Callbacks"                             ║
+║  [ 3] +24    │ "Rock"                                  ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+  Removing element at index 1 ("World")...
+  The destructor will free the string before shifting.
+
+  array_remove(arr, 1) → success
+
+╔══════════════════════════════════════════════════════════╗
+║  After removing index 1                                  ║
+╠══════════════════════════════════════════════════════════╣
+║  type: char*     element_size: 8     reallocs: 0         ║
+║  size: 3         capacity: 4                               ║
+║  destroy_fn: SET (elements will be cleaned up)            ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ "Hello"                                 ║
+║  [ 1] +8     │ "Callbacks"                             ║
+║  [ 2] +16    │ "Rock"                                  ║
+║  [ 3] +24    │ (unused)                                ║
+╠══════════════════════════════════════════════════════════╣
+║  24B used / 32B allocated = 75.0% utilization          ║
+╚══════════════════════════════════════════════════════════╝
+
+  Now calling array_destroy()...
+  The destructor will free each remaining string.
+  Without the destructor, these strings would leak.
+
+  Array destroyed. All strings freed. No memory leaks.
+  (Verify with: valgrind ./build/post_07)
+
+═══════════════════════════════════════════════════════════
+  Demo 6: The qsort double-dereference for pointer types
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Unsorted strings                                        ║
+╠══════════════════════════════════════════════════════════╣
+║  type: char*     element_size: 8     reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: SET (elements will be cleaned up)            ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ "delta"                                 ║
+║  [ 1] +8     │ "alpha"                                 ║
+║  [ 2] +16    │ "charlie"                               ║
+║  [ 3] +24    │ "bravo"                                 ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+  The comparator receives char** (not char*):
+
+    int compare_strings(const void *a, const void *b) {
+        const char *const *sa = (const char *const *)a;
+        const char *const *sb = (const char *const *)b;
+        return strcmp(*sa, *sb);  // dereference once
+    }
+
+╔══════════════════════════════════════════════════════════╗
+║  Sorted strings (alphabetical)                           ║
+╠══════════════════════════════════════════════════════════╣
+║  type: char*     element_size: 8     reallocs: 0         ║
+║  size: 4         capacity: 4                               ║
+║  destroy_fn: SET (elements will be cleaned up)            ║
+╠══════════════════════════════════════════════════════════╣
+║  [ 0] +0     │ "alpha"                                 ║
+║  [ 1] +8     │ "bravo"                                 ║
+║  [ 2] +16    │ "charlie"                               ║
+║  [ 3] +24    │ "delta"                                 ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization         ║
+╚══════════════════════════════════════════════════════════╝
+
+  Why char** ? Because:
+    Buffer: [ char* | char* | char* | char* ]
+    qsort gives you a pointer TO each char* in the buffer.
+    A pointer to a char* is a char**.
+
+  For value types (int, Person), you get one level:
+    Buffer: [ int  | int  | int  | int  ]
+    qsort gives you int* for each element.
+
+DOT file written to output/post_07_callback_dispatch.dot
+Render: dot -Tsvg output/post_07_callback_dispatch.dot -o output/post_07_callback_dispatch.svg
+
+═══════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════
+
+  Q: Write a comparator function that sorts Person structs
+     by name. Why does qsort pass void** not void* when
+     the array stores pointer types?
+
+  A: The comparator for Person structs sorted by name:
+
+     int compare_by_name(const void *a, const void *b) {
+         const Person *pa = (const Person *)a;
+         const Person *pb = (const Person *)b;
+         return strcmp(pa->name, pb->name);
+     }
+
+     This works because Person is a value type — the array
+     stores Person values directly in the buffer. qsort
+     passes a pointer to each Person, so each argument
+     is a Person* (cast to const void*).
+
+     For pointer types (char*, Person*), qsort passes a
+     pointer to the pointer. If the buffer holds char*
+     values, each argument is a char** (cast to const
+     void*). You must dereference once to get the char*.
+
+     The rule: qsort always gives you &buffer[i], which
+     is a pointer to whatever the buffer stores. For T,
+     you get T*. For T*, you get T**.
+
+═══════════════════════════════════════════════════════════
+  End of Post 7. Next: bounds checking and defensive APIs.
+═══════════════════════════════════════════════════════════
+

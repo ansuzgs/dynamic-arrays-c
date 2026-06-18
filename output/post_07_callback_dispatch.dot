@@ -1,0 +1,51 @@
+digraph CallbackDispatch {
+  rankdir=TB;
+  graph [fontname="Helvetica", fontsize=12, bgcolor="#fafafa",
+         label="Callback Dispatch Flow\nPost 7: Function Pointers and Callbacks", labelloc=t];
+  node [fontname="Helvetica", fontsize=10, style=filled];
+  edge [fontname="Helvetica", fontsize=9];
+
+  array_struct [shape=record, fillcolor="#e3f2fd",
+    label="{ Array | data: void* | size: 0 | capacity: 0 | element_size: 0 | { destroy_fn | (function pointer) }}"];
+
+  sort_op [label="array_sort()\naccepts: ArrayCompareFn", shape=box, fillcolor="#c8e6c9"];
+  find_op [label="array_find()\naccepts: ArrayPredicateFn", shape=box, fillcolor="#c8e6c9"];
+  foreach_op [label="array_foreach()\naccepts: ArrayForeachFn", shape=box, fillcolor="#c8e6c9"];
+  destroy_op [label="array_destroy()\nuses: arr->destroy_fn", shape=box, fillcolor="#ffcdd2"];
+  remove_op [label="array_remove()\nuses: arr->destroy_fn", shape=box, fillcolor="#ffcdd2"];
+
+  compare_fn [label="compare_ints()\ncompare_by_name()\n...", shape=ellipse, fillcolor="#fff9c4"];
+  predicate_fn [label="match_by_id()\nmatch_threshold()\n...", shape=ellipse, fillcolor="#fff9c4"];
+  foreach_fn [label="print_element()\nscale_values()\n...", shape=ellipse, fillcolor="#fff9c4"];
+  destroy_fn_node [label="free_string()\nfree_person()\n...", shape=ellipse, fillcolor="#fff9c4"];
+
+  qsort_fn [label="qsort()\n(standard library)", shape=box, fillcolor="#e0e0e0"];
+
+  sort_op -> qsort_fn [label="delegates to"];
+  qsort_fn -> compare_fn [label="calls per\ncomparison", style=dashed];
+  find_op -> predicate_fn [label="calls per\nelement", style=dashed];
+  foreach_op -> foreach_fn [label="calls per\nelement", style=dashed];
+  destroy_op -> destroy_fn_node [label="calls per\nelement", style=dashed, color="#c62828"];
+  remove_op -> destroy_fn_node [label="calls on\nremoved element", style=dashed, color="#c62828"];
+
+  array_struct -> destroy_op [label="destroy_fn\nstored in struct", color="#1565c0"];
+  array_struct -> remove_op [label="destroy_fn\nstored in struct", color="#1565c0"];
+
+  caller [label="Caller Code", shape=oval, fillcolor="#f3e5f5"];
+  caller -> sort_op [label="passes comparator"];
+  caller -> find_op [label="passes predicate"];
+  caller -> foreach_op [label="passes callback"];
+  caller -> destroy_op [label="calls"];
+  caller -> remove_op [label="calls"];
+
+  subgraph cluster_legend {
+    label="Legend";
+    style=rounded; color="#bdbdbd";
+    fontname="Helvetica"; fontsize=10;
+    leg_op [label="Array operation", shape=box, fillcolor="#c8e6c9"];
+    leg_cb [label="User callback", shape=ellipse, fillcolor="#fff9c4"];
+    leg_destr [label="Destructive op", shape=box, fillcolor="#ffcdd2"];
+    leg_op -> leg_cb [style=invis];
+    leg_cb -> leg_destr [style=invis];
+  }
+}
