@@ -1,0 +1,232 @@
+═══════════════════════════════════════════════════════════
+  Post 8: Bounds Checking and Defensive APIs
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 1: Checked vs Unchecked Access
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  5 elements in capacity-8 array                          ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 5         capacity: 8                               ║
+║  build mode: DEFAULT (runtime checks)                     ║
+╠══════════════════════════════════════════════════════════╣
+║  Legend: ✓ = valid  · = allocated/unused  ✗ = OOB      ║
+╠══════════════════════════════════════════════════════════╣
+║  ✓ [ 0] +0     │ 100                                   ║
+║  ✓ [ 1] +4     │ 200                                   ║
+║  ✓ [ 2] +8     │ 300                                   ║
+║  ✓ [ 3] +12    │ 400                                   ║
+║  ✓ [ 4] +16    │ 500                                   ║
+║  · [ 5] +20    │ (unused)                              ║
+║  · [ 6] +24    │ (unused)                              ║
+║  · [ 7] +28    │ (unused)                              ║
+║  ✗ [ 8] +32    │ OUT OF BOUNDS — undefined behavior  ║
+║  ✗ [ 9] +36    │ OUT OF BOUNDS — undefined behavior  ║
+╠══════════════════════════════════════════════════════════╣
+║  20B used / 32B allocated = 62.5% utilization          ║
+╠══════════════════════════════════════════════════════════╣
+║  array_get(arr, 4)       → valid (last element)          ║
+║  array_get(arr, 5)       → NULL (out of bounds)          ║
+║  array_get_unchecked(arr, 5) → UNDEFINED BEHAVIOR!       ║
+╚══════════════════════════════════════════════════════════╝
+
+  Safe access (checked):
+    array_get(arr, 2) → 300 ✓
+
+  Out-of-bounds access (checked):
+    array_get(arr, 10) → NULL ✓ (caught by bounds check)
+
+  Unchecked access (within bounds):
+    array_get_unchecked(arr, 2) → 300 ✓
+
+  Unchecked access (out of bounds — DANGEROUS):
+    array_get_unchecked(arr, 10) → would read uninitialized
+    memory beyond the buffer. This is undefined behavior.
+    We don't execute it because the result is unpredictable.
+
+═══════════════════════════════════════════════════════════
+  Demo 2: The #ifdef Pattern — Build Mode Behavior
+═══════════════════════════════════════════════════════════
+
+  Current build mode:
+    Default → Level 1 (safe)
+    ARRAY_ASSERT → compiled away
+    Runtime checks → active (return error codes)
+
+  The same source code, three different behaviors:
+
+    gcc -o prog post_08.c                   # Level 1 (safe)
+    gcc -DARRAY_DEBUG_CHECKS -o prog post_08.c  # Level 2 (debug)
+    gcc -DNDEBUG -O2 -o prog post_08.c      # Level 0 (release)
+
+  What happens on array_get(arr, 999) for size=5 array:
+    Level 0: returns NULL (runtime check still present)
+    Level 1: returns NULL (runtime check + error callback)
+    Level 2: ABORTS with message before reaching NULL return
+
+  Testing: array_get(arr, 999) on a 2-element array...
+  Result: NULL (correct)
+  Array is still intact after the failed access.
+
+═══════════════════════════════════════════════════════════
+  Demo 3: Error Callback — Monitoring Contract Violations
+═══════════════════════════════════════════════════════════
+
+  Triggering various contract violations:
+
+    [error #1] index out of bounds: array_set: index out of range (at src/post_08.c:383)
+    [error #2] NULL pointer argument: array_push: NULL argument (at src/post_08.c:317)
+    [error #3] index out of bounds: array_remove: index out of range (at src/post_08.c:445)
+    [error #4] index out of bounds: array_insert: index out of range (at src/post_08.c:410)
+
+  Total violations caught: 4
+  Array is still perfectly valid after all violations.
+
+╔══════════════════════════════════════════════════════════╗
+║  Intact after 4 violations                               ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 3         capacity: 4                               ║
+║  build mode: DEFAULT (runtime checks)                     ║
+╠══════════════════════════════════════════════════════════╣
+║  Legend: ✓ = valid  · = allocated/unused  ✗ = OOB      ║
+╠══════════════════════════════════════════════════════════╣
+║  ✓ [ 0] +0     │ 10                                    ║
+║  ✓ [ 1] +4     │ 20                                    ║
+║  ✓ [ 2] +8     │ 30                                    ║
+║  · [ 3] +12    │ (unused)                              ║
+║  ✗ [ 4] +16    │ OUT OF BOUNDS — undefined behavior  ║
+║  ✗ [ 5] +20    │ OUT OF BOUNDS — undefined behavior  ║
+╠══════════════════════════════════════════════════════════╣
+║  12B used / 16B allocated = 75.0% utilization          ║
+╠══════════════════════════════════════════════════════════╣
+║  array_get(arr, 2)       → valid (last element)          ║
+║  array_get(arr, 3)       → NULL (out of bounds)          ║
+║  array_get_unchecked(arr, 3) → UNDEFINED BEHAVIOR!       ║
+╚══════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════
+  Demo 4: Unchecked Access in Performance-Critical Loops
+═══════════════════════════════════════════════════════════
+
+  Pattern 1 — Safe loop (checked access each iteration):
+
+    long total = 0;
+    for (size_t i = 0; i < array_size(arr); i++) {
+        int *p = array_get(arr, i);   // bounds check per call
+        if (p) total += *p;
+    }
+
+    Result: 285 (with 10 bounds checks)
+
+  Pattern 2 — Fast loop (unchecked, bounds proven by loop):
+
+    long total = 0;
+    size_t n = array_size(arr);  // one check, up front
+    for (size_t i = 0; i < n; i++) {
+        int *p = array_get_unchecked(arr, i);  // zero overhead
+        total += *p;
+    }
+
+    Result: 285 (with 0 bounds checks)
+
+  Both produce 285. The difference is 10 avoided branches.
+  In a loop processing millions of elements per second,
+  those branches add up to measurable overhead.
+
+═══════════════════════════════════════════════════════════
+  Demo 5: API Contract Documentation
+═══════════════════════════════════════════════════════════
+
+  Every function in the API has a documented contract:
+
+  ┌──────────────────────────────────────────────────────┐
+  │  array_get(arr, index)                               │
+  │                                                      │
+  │  PRECONDITIONS:                                      │
+  │    - arr must not be NULL                             │
+  │    - index must be < arr->size                       │
+  │                                                      │
+  │  POSTCONDITIONS:                                     │
+  │    - Returns pointer to element at index              │
+  │    - Returns NULL if preconditions violated           │
+  │    - Array state is never modified                    │
+  │                                                      │
+  │  CHECKED:   validates preconditions, returns NULL     │
+  │  UNCHECKED: no validation, undefined behavior on     │
+  │             precondition violation                    │
+  └──────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────┐
+  │  array_push(arr, element)                            │
+  │                                                      │
+  │  PRECONDITIONS:                                      │
+  │    - arr must not be NULL                             │
+  │    - element must not be NULL                         │
+  │    - element must point to element_size bytes         │
+  │                                                      │
+  │  POSTCONDITIONS:                                     │
+  │    - On success: element appended, size incremented   │
+  │    - On failure: array unchanged, error code returned │
+  │                                                      │
+  │  ERRORS:                                             │
+  │    - ARRAY_ERR_NULL if arr or element is NULL         │
+  │    - ARRAY_ERR_ALLOC if growth realloc fails          │
+  │    - ARRAY_ERR_OVERFLOW if capacity overflows size_t  │
+  └──────────────────────────────────────────────────────┘
+
+  The contract tells the caller three things:
+    1. What they must guarantee (preconditions)
+    2. What the function guarantees in return (postconditions)
+    3. What can go wrong and how it's reported (errors)
+
+  This is Design by Contract (Bertrand Meyer, 1986).
+  The function promises to fulfill postconditions IF the
+  caller fulfills preconditions. If the caller violates a
+  precondition, the function's response depends on the
+  build mode (see Demo 2).
+
+DOT file written to output/post_08_api_layers.dot
+Render: dot -Tsvg output/post_08_api_layers.dot -o output/post_08_api_layers.svg
+
+═══════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════
+
+  Q: Design an array_get() that is safe in debug builds
+     and zero-overhead in release. Show the #ifdef pattern.
+
+  A: The pattern uses ARRAY_ASSERT + conditional compilation:
+
+     void *array_get(const Array *arr, size_t index)
+     {
+         /* Debug: crash immediately on violation */
+         ARRAY_ASSERT(arr != NULL, "NULL array");
+         ARRAY_ASSERT(index < arr->size, "OOB");
+     
+         /* Release: this whole block compiles away */
+         #if ARRAY_BOUNDS_CHECK_ENABLED
+             if (!arr || index >= arr->size)
+                 return NULL;
+         #endif
+     
+         return element_at_unchecked(arr, index);
+     }
+
+     In debug (ARRAY_DEBUG_CHECKS): ARRAY_ASSERT fires → abort()
+     In default: ARRAY_ASSERT is no-op, if-check returns NULL
+     In release (NDEBUG): both compiled away → zero overhead,
+     but caller is 100% responsible for valid arguments.
+
+     The tradeoff: release mode is as fast as raw pointer
+     arithmetic, but a bug that passes an invalid index
+     causes silent corruption instead of a clean error.
+
+═══════════════════════════════════════════════════════════
+  End of Post 8. Next: iterators and element access
+  patterns.
+═══════════════════════════════════════════════════════════
+

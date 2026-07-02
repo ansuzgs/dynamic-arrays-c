@@ -1,0 +1,73 @@
+digraph APILayers {
+  rankdir=TB;
+  graph [fontname="Helvetica", fontsize=12, bgcolor="#fafafa",
+         label="API Layers: Checked → Unchecked\nPost 8: Bounds Checking and Defensive APIs", labelloc=t];
+  node [fontname="Helvetica", fontsize=10, style=filled];
+  edge [fontname="Helvetica", fontsize=9];
+
+  caller [label="Caller Code", shape=oval, fillcolor="#f3e5f5"];
+
+  subgraph cluster_public {
+    label="Public API (checked)";
+    style=rounded; color="#2e7d32"; penwidth=2;
+    fontname="Helvetica"; fontsize=11;
+
+    get [label="array_get()\nNULL check + bounds check\nreturns NULL on failure", shape=box, fillcolor="#c8e6c9"];
+    set [label="array_set()\nNULL check + bounds check\nreturns error code", shape=box, fillcolor="#c8e6c9"];
+    push [label="array_push()\nNULL check + capacity check\nreturns error code", shape=box, fillcolor="#c8e6c9"];
+    insert [label="array_insert()\nNULL check + bounds check\nreturns error code", shape=box, fillcolor="#c8e6c9"];
+    remove [label="array_remove()\nNULL check + bounds check\nreturns error code", shape=box, fillcolor="#c8e6c9"];
+  }
+
+  get_unchecked [label="array_get_unchecked()\nNO validation\ncaller responsible", shape=box, fillcolor="#ffcdd2"];
+
+  subgraph cluster_private {
+    label="Private Core (unchecked)";
+    style=rounded; color="#c62828"; penwidth=2;
+    fontname="Helvetica"; fontsize=11;
+
+    elem_at [label="element_at_unchecked()\nraw pointer arithmetic\ntrusts all inputs", shape=box, fillcolor="#ffcdd2"];
+    ensure_cap [label="ensure_capacity_unchecked()\ngrowth + realloc\ntrusts arr != NULL", shape=box, fillcolor="#ffcdd2"];
+  }
+
+  subgraph cluster_debug {
+    label="Debug Layer (compile-time conditional)";
+    style=dashed; color="#ff8f00";
+    fontname="Helvetica"; fontsize=11;
+
+    assert_layer [label="ARRAY_ASSERT()\nLevel 2: abort() on violation\nLevel 0-1: compiled away", shape=diamond, fillcolor="#fff9c4"];
+  }
+
+  caller -> get [label="safe path"];
+  caller -> set [label="safe path"];
+  caller -> push [label="safe path"];
+  caller -> insert [label="safe path"];
+  caller -> remove [label="safe path"];
+  caller -> get_unchecked [label="perf escape hatch", style=dashed, color="#c62828"];
+
+  get -> assert_layer [style=dotted, color="#ff8f00"];
+  set -> assert_layer [style=dotted, color="#ff8f00"];
+  push -> assert_layer [style=dotted, color="#ff8f00"];
+  assert_layer -> elem_at [style=dotted, color="#ff8f00"];
+
+  get -> elem_at;
+  set -> elem_at;
+  push -> elem_at;
+  push -> ensure_cap;
+  insert -> elem_at;
+  insert -> ensure_cap;
+  remove -> elem_at;
+
+  get_unchecked -> elem_at [color="#c62828", label="direct\n(no checks)"];
+
+  subgraph cluster_legend {
+    label="Legend";
+    style=rounded; color="#bdbdbd";
+    fontname="Helvetica"; fontsize=10;
+    leg_safe [label="Checked (safe)", shape=box, fillcolor="#c8e6c9"];
+    leg_unsafe [label="Unchecked (fast)", shape=box, fillcolor="#ffcdd2"];
+    leg_debug [label="Debug-only", shape=diamond, fillcolor="#fff9c4"];
+    leg_safe -> leg_unsafe [style=invis];
+    leg_unsafe -> leg_debug [style=invis];
+  }
+}

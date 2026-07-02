@@ -23,7 +23,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 | 5 | [Type-Safe Wrappers](https://pablogs.dev/posts/type-safe-wrapper-macros-void-pointer-dynamic-array-c/) | Macros, `_Generic` (C11), compile-time checks | [post_05](src/post_05.c) |
 | 6 | [Error Handling Strategies](https://pablogs.dev/posts/error-handling-strategies-realloc-failure-dynamic-array-c/) | OOM recovery, preserving array state | [post_06.c](src/post_06.c) |
 | 7 | [Function Pointers and Callbacks](https://pablogs.dev/posts/function-pointers-callbacks-sort-search-destroy-c/) | Comparators, destructors, `foreach` | [post_07.c](src/post_07.c) |
-| 8 | Bounds Checking and Defensive APIs | Debug vs release, safe accessors | *coming soon* |
+| 8 | [Bounds Checking and Defensive APIs](https://pablogs.dev/posts/bounds-checking-defensive-api-assert-ndebug-c/) | Debug vs release, safe accessors | [post_08.c](src/post_08.c) |
 | 9 | Insert, Remove, and the Cost of Shifting | `memmove`, swap-remove | *coming soon* |
 | 10 | Iterators and Traversal | Iterator structs, invalidation rules | *coming soon* |
 | 11 | Memory Layout and Cache Performance | Alignment, padding, SoA vs AoS | *coming soon* |
