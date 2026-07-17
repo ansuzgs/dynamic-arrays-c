@@ -1,0 +1,70 @@
+digraph ShiftLayout {
+  rankdir=TB;
+  graph [fontname="Helvetica", fontsize=12, bgcolor="#fafafa",
+         label="Insert & Remove: Memory Movement\nPost 9: The Cost of Shifting", labelloc=t,
+         nodesep=0.4, ranksep=0.6];
+  node [fontname="Helvetica", fontsize=10, style=filled];
+  edge [fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_insert {
+    label="array_insert(arr, 2, &val_25)";
+    style=rounded; color="#1565c0"; penwidth=2;
+    fontname="Helvetica"; fontsize=11;
+
+    ins_before [shape=record, fillcolor="#e3f2fd",
+      label="{BEFORE (size=5)|{[0] 10|[1] 20|[2] 30|[3] 40|[4] 50|[5] ·}}"];
+
+    ins_shift [shape=note, fillcolor="#fff9c4",
+      label="memmove: 3 elements right\l= 12 bytes shifted\lO(n) where n = size - index\l"];
+
+    ins_after [shape=record, fillcolor="#c8e6c9",
+      label="{AFTER (size=6)|{[0] 10|[1] 20|[2] \<b\>25\</b\>|[3] 30|[4] 40|[5] 50}}"];
+
+    ins_before -> ins_shift [label="shift [2..4] right"];
+    ins_shift -> ins_after [label="write 25 at [2]"];
+  }
+
+  subgraph cluster_remove {
+    label="array_remove(arr, 1)  vs  array_swap_remove(arr, 1)";
+    style=rounded; color="#c62828"; penwidth=2;
+    fontname="Helvetica"; fontsize=11;
+
+    rem_before [shape=record, fillcolor="#ffebee",
+      label="{BEFORE (size=5)|{[0] 10|[1] \<b\>20\</b\>|[2] 30|[3] 40|[4] 50}}"];
+
+    rem_stable [shape=note, fillcolor="#fff9c4",
+      label="STABLE remove:\lmemmove 3 elements left\l= 12 bytes shifted\lOrder preserved ✓\l"];
+
+    rem_stable_after [shape=record, fillcolor="#c8e6c9",
+      label="{AFTER stable (size=4)|{[0] 10|[1] 30|[2] 40|[3] 50}}"];
+
+    rem_swap [shape=note, fillcolor="#e1bee7",
+      label="SWAP remove:\lcopy last element to [1]\l= 4 bytes copied\lOrder BROKEN ✗\l"];
+
+    rem_swap_after [shape=record, fillcolor="#f3e5f5",
+      label="{AFTER swap (size=4)|{[0] 10|[1] \<b\>50\</b\>|[2] 30|[3] 40}}"];
+
+    rem_before -> rem_stable [label="preserve order"];
+    rem_before -> rem_swap [label="O(1) fast path", style=dashed];
+    rem_stable -> rem_stable_after;
+    rem_swap -> rem_swap_after;
+  }
+
+  subgraph cluster_cost {
+    label="Cost Comparison (4-byte elements)";
+    style=rounded; color="#616161"; penwidth=1;
+    fontname="Helvetica"; fontsize=11;
+
+    cost_table [shape=plaintext, fillcolor="#ffffff",
+      label=<
+        <table border="0" cellborder="1" cellspacing="0">
+          <tr><td><b>Operation</b></td><td><b>Bytes moved</b></td><td><b>Complexity</b></td></tr>
+          <tr><td>insert at front (n=1000)</td><td>4000</td><td>O(n)</td></tr>
+          <tr><td>insert at back (push)</td><td>0</td><td>O(1)</td></tr>
+          <tr><td>remove from front (n=1000)</td><td>3996</td><td>O(n)</td></tr>
+          <tr><td>remove from back (pop)</td><td>0</td><td>O(1)</td></tr>
+          <tr><td>swap_remove anywhere</td><td>4</td><td>O(1)</td></tr>
+        </table>
+      >];
+  }
+}

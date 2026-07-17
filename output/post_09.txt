@@ -1,0 +1,244 @@
+═══════════════════════════════════════════════════════════
+  Post 9: Insert, Remove, and the Cost of Shifting
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 1: Inserting at Different Positions
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Initial state                                           ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 5         capacity: 16                              ║
+║  bytes_shifted (cumulative): 0                            ║
+╠══════════════════════════════════════════════════════════╣
+║  ✓ [ 0] +0     │ 10                                    ║
+║  ✓ [ 1] +4     │ 20                                    ║
+║  ✓ [ 2] +8     │ 30                                    ║
+║  ✓ [ 3] +12    │ 40                                    ║
+║  ✓ [ 4] +16    │ 50                                    ║
+║  · [ 5] +20    │ (unused)                              ║
+║  · [ 6] +24    │ (unused)                              ║
+║  · [ 7] +28    │ (unused)                              ║
+║  · [ 8] +32    │ (unused)                              ║
+║  · [ 9] +36    │ (unused)                              ║
+║  · [10] +40    │ (unused)                              ║
+║  · [11] +44    │ (unused)                              ║
+║  · ... 4 more unused slots                            ║
+╠══════════════════════════════════════════════════════════╣
+║  20B used / 64B allocated = 31.2% utilization            ║
+╚══════════════════════════════════════════════════════════╝
+
+  ┌─────────────────────────────────────────────────┐
+  │  INSERT 5 at index 0                          │
+  └─────────────────────────────────────────────────┘
+
+  BEFORE: [10, 20, 30, 40, 50]  (size=5)
+
+  Step 1: Shift 5 elements right (20 bytes via memmove)
+
+          [10]→ [20]→ [30]→ [40]→ [50]→ [  ]
+            ↑gap                         
+
+  Step 2: Write 5 into gap at index 0
+
+  AFTER:  [5, 10, 20, 30, 40, 50]  (size=6, bytes shifted so far: 20)
+
+  ┌─────────────────────────────────────────────────┐
+  │  INSERT 25 at index 3                          │
+  └─────────────────────────────────────────────────┘
+
+  BEFORE: [5, 10, 20, 30, 40, 50]  (size=6)
+
+  Step 1: Shift 3 elements right (12 bytes via memmove)
+
+          [5]  [10]  [20]  [30]→ [40]→ [50]→ [  ]
+                              ↑gap             
+
+  Step 2: Write 25 into gap at index 3
+
+  AFTER:  [5, 10, 20, 25, 30, 40, 50]  (size=7, bytes shifted so far: 32)
+
+  ┌─────────────────────────────────────────────────┐
+  │  INSERT 99 at index 7                          │
+  └─────────────────────────────────────────────────┘
+
+  BEFORE: [5, 10, 20, 25, 30, 40, 50]  (size=7)
+
+  Step 1: No shift needed (inserting at end)
+
+  Step 2: Write 99 into gap at index 7
+
+  AFTER:  [5, 10, 20, 25, 30, 40, 50, 99]  (size=8, bytes shifted so far: 32)
+
+╔══════════════════════════════════════════════════════════╗
+║  After three inserts                                     ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 8         capacity: 16                              ║
+║  bytes_shifted (cumulative): 32                           ║
+╠══════════════════════════════════════════════════════════╣
+║  ✓ [ 0] +0     │ 5                                     ║
+║  ✓ [ 1] +4     │ 10                                    ║
+║  ✓ [ 2] +8     │ 20                                    ║
+║  ✓ [ 3] +12    │ 25                                    ║
+║  ✓ [ 4] +16    │ 30                                    ║
+║  ✓ [ 5] +20    │ 40                                    ║
+║  ✓ [ 6] +24    │ 50                                    ║
+║  ✓ [ 7] +28    │ 99                                    ║
+║  · [ 8] +32    │ (unused)                              ║
+║  · [ 9] +36    │ (unused)                              ║
+║  · [10] +40    │ (unused)                              ║
+║  · [11] +44    │ (unused)                              ║
+║  · ... 4 more unused slots                            ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 64B allocated = 50.0% utilization            ║
+╚══════════════════════════════════════════════════════════╝
+
+  Summary: 3 inserts, total bytes shifted by memmove: 32
+  Insert at front shifted 20 bytes (worst case).
+  Insert at end shifted 0 bytes (best case = push).
+
+═══════════════════════════════════════════════════════════
+  Demo 2: Stable Remove vs Swap-Remove
+═══════════════════════════════════════════════════════════
+
+  ── Part A: Stable remove (memmove, preserves order) ──
+
+  ┌─────────────────────────────────────────────────┐
+  │  REMOVE element 30 at index 2                       │
+  └─────────────────────────────────────────────────┘
+
+  BEFORE: [10, 20, 30, 40, 50, 60, 70, 80]  (size=8)
+
+  Step 1: Remove element at [2] = 30
+
+  Step 2: Shift 5 elements left (20 bytes via memmove)
+
+          [10]  [20]  [XX]   ←[40] ←[50] ←[60] ←[70] ←[80]
+
+  AFTER:  [10, 20, 40, 50, 60, 70, 80]  (size=7, bytes shifted: 20)
+
+  Order preserved: ✓ (all elements still in original order)
+
+  ── Part B: Swap-remove (memcpy, O(1), reorders) ──
+
+  ┌─────────────────────────────────────────────────┐
+  │  SWAP-REMOVE element 30 at index 2                  │
+  └─────────────────────────────────────────────────┘
+
+  BEFORE: [10, 20, 30, 40, 50, 60, 70, 80]  (size=8)
+
+  Step 1: Copy last element (80) into position [2]
+          Cost: 4 bytes (ONE memcpy, always)
+
+          [10]  [20]  [80←[40]  [50]  [60]  [70]   80]
+
+  Step 2: Decrement size (no shifting, order NOT preserved)
+
+  AFTER:  [10, 20, 80, 40, 50, 60, 70]  (size=7, bytes shifted: 0)
+
+  Order preserved: ✗ (element 80 moved from [7] to [2])
+
+  ┌──────────────────────────────────────────────────────┐
+  │  Cost Comparison: remove index 2 from 8 elements    │
+  ├──────────────────────────────────────────────────────┤
+  │  Stable (memmove):   20 bytes shifted   O(n)        │
+  │  Swap   (memcpy):     4 bytes copied    O(1)        │
+  │  Ratio:             5× more work for stable       │
+  └──────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════
+  Demo 3: How Shifting Cost Scales with Array Size
+═══════════════════════════════════════════════════════════
+
+  Removing element at index 0 (worst case) from arrays
+  of increasing size:
+
+  ┌──────────┬──────────────────┬──────────────────┐
+  │  Size    │  Stable remove   │  Swap-remove     │
+  │          │  (bytes shifted)  │  (bytes copied)  │
+  ├──────────┼──────────────────┼──────────────────┤
+  │  10      │  36              │  4               │
+  │  100     │  396             │  4               │
+  │  1000    │  3996            │  4               │
+  │  10000   │  39996           │  4               │
+  └──────────┴──────────────────┴──────────────────┘
+
+  Stable remove scales linearly: O(n × element_size).
+  Swap-remove is constant: O(element_size), always.
+
+  For 10,000 int elements, stable remove at index 0 moves
+  39996 bytes. Swap-remove moves 4 bytes. That's a 9999× difference.
+
+═══════════════════════════════════════════════════════════
+  Demo 4: Index Stability After Removal
+═══════════════════════════════════════════════════════════
+
+  Suppose we store indices as external references:
+
+  Starting array: [10, 20, 30, 40, 50]
+  Stored reference: 'element 40 is at index 3'
+
+  Before removal: arr[3] = 40 ✓
+
+  → array_remove(arr, 1)  (stable, preserves order)
+
+  After stable remove: [10, 30, 40, 50]
+  arr[3] = 50 — WRONG! Element 40 is now at index 2.
+  Stable remove preserves order but shifts indices.
+
+  Reset: [10, 20, 30, 40, 50]
+  Stored reference: 'element 40 is at index 3'
+
+  → array_swap_remove(arr, 1)  (unstable, O(1))
+
+  After swap-remove: [10, 50, 30, 40]
+  arr[3] = 40 — CORRECT! Index 3 still holds 40.
+
+  Key insight: NEITHER removal strategy preserves index
+  stability unless the removal is at or after the reference.
+  If you need stable handles, use a different data structure
+  (slot map, generational index, linked list).
+
+  DOT file written to output/post_09_shift_layout.dot
+  Render: dot -Tsvg output/post_09_shift_layout.dot -o output/post_09_shift_layout.svg
+
+═══════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════
+
+  Q: You have an array of 1000 int elements and need to
+     remove element at index 500. Compare the cost of
+     memmove vs swap-remove.
+
+  A:
+
+  Stable remove (memmove):
+    Elements to shift: 1000 - 500 - 1 = 499
+    Bytes moved: 499 × 4 = 1,996 bytes
+    Complexity: O(n) — proportional to elements after index
+
+  Swap-remove (memcpy):
+    Copy last element (index 999) to index 500
+    Bytes moved: 1 × 4 = 4 bytes
+    Complexity: O(1) — constant regardless of array size
+
+  The stable remove does 499× more work.
+  For element 0, it would be 999× more work.
+  For element 999 (last), both do zero work (just decrement).
+
+  The tradeoff: swap-remove breaks element order.
+  After swap-removing index 500, the element that was at
+  index 999 is now at index 500. If the array is sorted,
+  it isn't anymore. If external code stored index 999 as a
+  reference, that reference now points past the array.
+
+  Bonus — error handling sanity check:
+  array_swap_remove(NULL, 0) → NULL pointer argument ✓
+
+═══════════════════════════════════════════════════════════
+  End of Post 9. Next: iterators and traversal patterns.
+═══════════════════════════════════════════════════════════
+
