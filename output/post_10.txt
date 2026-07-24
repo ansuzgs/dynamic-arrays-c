@@ -1,0 +1,245 @@
+═══════════════════════════════════════════════════════════
+  Post 10: Iterators and Traversal Patterns in C
+═══════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════
+  Demo 1: Basic Iterator Traversal
+═══════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════╗
+║  Array with 8 elements                                   ║
+╠══════════════════════════════════════════════════════════╣
+║  type: int       element_size: 4     reallocs: 0         ║
+║  size: 8         capacity: 8         mod_count: 8         ║
+╠══════════════════════════════════════════════════════════╣
+║  ✓ [ 0] +0     │ 10                                    ║
+║  ✓ [ 1] +4     │ 20                                    ║
+║  ✓ [ 2] +8     │ 30                                    ║
+║  ✓ [ 3] +12    │ 40                                    ║
+║  ✓ [ 4] +16    │ 50                                    ║
+║  ✓ [ 5] +20    │ 60                                    ║
+║  ✓ [ 6] +24    │ 70                                    ║
+║  ✓ [ 7] +28    │ 80                                    ║
+╠══════════════════════════════════════════════════════════╣
+║  32B used / 32B allocated = 100.0% utilization           ║
+╚══════════════════════════════════════════════════════════╝
+
+  Traversal with ArrayIterator:
+
+  ArrayIterator it = array_iter_begin(arr);
+  while (array_iter_valid(&it)) {
+      int *val = (int *)array_iter_get(&it);
+      process(*val);
+      array_iter_next(&it);
+  }
+
+  Step-by-step iterator positions:
+
+  Step 0: index=0, *get()=10
+  [ 10] [ 20] [ 30] [ 40] [ 50] [ 60] [ 70] [ 80] 
+    ↑                                             
+   it                                             
+
+  Step 1: index=1, *get()=20
+  [ 10] [ 20] [ 30] [ 40] [ 50] [ 60] [ 70] [ 80] 
+          ↑                                       
+         it                                       
+
+  Step 2: index=2, *get()=30
+  [ 10] [ 20] [ 30] [ 40] [ 50] [ 60] [ 70] [ 80] 
+                ↑                                 
+               it                                 
+
+  ... (advancing through indices 3-6) ...
+
+  Step 7: index=7, *get()=80
+  [ 10] [ 20] [ 30] [ 40] [ 50] [ 60] [ 70] [ 80] 
+                                              ↑   
+                                             it   
+
+  Step 8: index=8 — past end, valid()=0
+  [ 10] [ 20] [ 30] [ 40] [ 50] [ 60] [ 70] [ 80]  ‖
+                                                   ↑ it (past end)
+
+═══════════════════════════════════════════════════════════
+  Demo 2: Index-Based Loop vs Iterator
+═══════════════════════════════════════════════════════════
+
+  Index-based loop:
+  ─────────────────────────────────────────────────
+  for (size_t i = 0; i < array_size(arr); i++) {
+      int *val = (int *)array_get(arr, i);
+      printf("%d ", *val);
+  }
+  Output: 10 20 30 40 50 60 
+
+  Iterator-based loop:
+  ─────────────────────────────────────────────────
+  ArrayIterator it = array_iter_begin(arr);
+  while (array_iter_valid(&it)) {
+      int *val = (int *)array_iter_get(&it);
+      printf("%d ", *val);
+      array_iter_next(&it);
+  }
+  Output: 10 20 30 40 50 60 
+
+  ARRAY_FOREACH macro:
+  ─────────────────────────────────────────────────
+  ARRAY_FOREACH(arr, int, val) {
+      printf("%d ", *val);
+  }
+  Output: 10 20 30 40 50 60 
+
+  ┌──────────────────────────────────────────────────────┐
+  │  All three produce the same output. The difference   │
+  │  is who manages the traversal state:                 │
+  │                                                      │
+  │  Index loop:      caller manages i, calls get(i)     │
+  │  Iterator:        it struct manages index + validity  │
+  │  ARRAY_FOREACH:   macro hides the iterator entirely  │
+  └──────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════
+  Demo 3: Filtered Iteration (Predicate Callbacks)
+═══════════════════════════════════════════════════════════
+
+  Array: [3, 14, 15, 92, 65, 35, 89, 79, 32, 38]
+
+  Filter: even numbers (is_even predicate)
+  Found: 14 92 32 38 
+
+  Filter: values > 50 (is_greater_than predicate)
+  Found: 92 65 89 79 
+
+  The pattern: begin → find_next → (process, next, find_next)*
+  This composes Post 7's predicate callbacks with Post 10's
+  iterator to create a reusable filtered traversal.
+
+═══════════════════════════════════════════════════════════
+  Demo 4: Iterator Invalidation
+═══════════════════════════════════════════════════════════
+
+  Scenario 1: array_push() during iteration
+  ──────────────────────────────────────────
+
+  Array: [10, 20, 30, 40]  (size=4, capacity=4, mod_count=4)
+
+  Iterator created: index=0, snapshot=4
+  array_iter_valid(&it) = 1  ✓
+
+  → array_push(arr, 50)  (capacity was 4, triggers realloc)
+
+  Array after push: [10, 20, 30, 40, 50]  (size=5, capacity=8, mod_count=5)
+  Iterator state:   index=0, snapshot=4
+  array_iter_valid(&it) = 0  ✗ (invalidated!)
+  array_iter_invalidated(&it) = 1
+  array_iter_get(&it) = NULL (safe)
+
+  The iterator detected the modification and refuses to
+  return data. Without this check, the caller would silently
+  read stale or wrong data — or crash if realloc moved the
+  buffer and the iterator used a cached pointer.
+
+  Scenario 2: array_insert() shifts iterator's target
+  ──────────────────────────────────────────────────
+
+  Array: [10, 20, 30, 40, 50]
+  Iterator at index 3 → value 40
+
+  → array_insert(arr, 1, 15)  (inserts before iterator)
+
+  Array: [10, 15, 20, 30, 40, 50]
+  Iterator at index 3 → valid=0 (invalidated — mod_count changed)
+
+  Even if we hadn't detected it, index 3 now holds 30,
+  not 40. The insert shifted everything right. The iterator's
+  index is 'correct' in that it's a valid index, but it points
+  to a different element than when the iterator was created.
+
+═══════════════════════════════════════════════════════════
+  Demo 5: Safe Removal During Iteration
+═══════════════════════════════════════════════════════════
+
+  Problem: remove all even numbers from [3, 8, 14, 15, 92, 35]
+
+  WRONG: Forward iteration + remove (skips elements)
+  ────────────────────────────────────────────────────
+  Before: [3, 8, 14, 15, 92, 35]
+  After:  [3, 14, 15, 35]  (removed 2, expected 3 — skipped adjacent even!)
+
+  RIGHT: Backward iteration + remove
+  ──────────────────────────────────
+  Before: [3, 8, 14, 15, 92, 35]
+  After:  [3, 15, 35]  (removed 3 ✓)
+
+  ALSO RIGHT: Forward iteration, don't increment on remove
+  ─────────────────────────────────────────────────────────
+  Before: [3, 8, 14, 15, 92, 35]
+  After:  [3, 15, 35]  (removed 3 ✓)
+
+  WITH ITERATOR: resync after each removal
+  ─────────────────────────────────────────
+  Before: [3, 8, 14, 15, 92, 35]
+  After:  [3, 15, 35]  (removed 3 ✓)
+
+  The resync() call re-arms the iterator after a deliberate
+  mutation. Use it ONLY when you understand why the mutation
+  is safe — e.g., you're removing the current element and
+  not advancing the index.
+
+  DOT file written to output/post_10_iterator_ownership.dot
+  Render: dot -Tsvg output/post_10_iterator_ownership.dot -o output/post_10_iterator_ownership.svg
+
+═══════════════════════════════════════════════════════════
+  Knowledge Test
+═══════════════════════════════════════════════════════════
+
+  Q: What happens to an iterator if you call array_push()
+     during iteration and it triggers realloc?
+
+  A:
+
+  Our index-based iterator:
+    - The iterator's index is still numerically valid
+      (index 3 is still index 3 after realloc).
+    - But mod_count was incremented by push(), so
+      the iterator's snapshot no longer matches.
+    - array_iter_valid() returns 0.
+    - array_iter_get() returns NULL.
+    - The iterator DETECTS the invalidation and refuses
+      to return potentially stale data.
+
+  A hypothetical pointer-based iterator (C++ style):
+    - The cached pointer points into the OLD buffer.
+    - realloc may have freed that buffer.
+    - Dereferencing the pointer is use-after-free:
+      undefined behavior.
+    - The iterator CANNOT detect this (no mod_count).
+    - Result: silent corruption, crash, or security bug.
+
+  This is the core tradeoff:
+
+  ┌─────────────────────────────────────────────────────┐
+  │  Approach         │ Survives   │ Detects    │ Cost  │
+  │                   │ realloc?   │ mutation?  │       │
+  ├─────────────────────────────────────────────────────┤
+  │  Index + mod_cnt  │ Yes        │ Yes        │ 1 cmp │
+  │  Raw pointer      │ No (UB!)   │ No         │ 0     │
+  │  Raw index loop   │ Yes        │ No         │ 0     │
+  └─────────────────────────────────────────────────────┘
+
+  The index+mod_count approach costs one comparison per
+  valid() call — negligible — and gives you both realloc
+  safety and mutation detection. The raw index loop is
+  simpler but can't tell you when the array changed
+  underneath you.
+
+  Bonus — new error code:
+  ARRAY_ERR_ITER → "iterator invalidated"
+  array_push(NULL, NULL) → "NULL pointer argument" ✓
+
+═══════════════════════════════════════════════════════════
+  End of Post 10. Next: memory layout, alignment, and
+  cache performance.
+═══════════════════════════════════════════════════════════
+

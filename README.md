@@ -25,7 +25,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 | 7 | [Function Pointers and Callbacks](https://pablogs.dev/posts/function-pointers-callbacks-sort-search-destroy-c/) | Comparators, destructors, `foreach` | [post_07.c](src/post_07.c) |
 | 8 | [Bounds Checking and Defensive APIs](https://pablogs.dev/posts/bounds-checking-defensive-api-assert-ndebug-c/) | Debug vs release, safe accessors | [post_08.c](src/post_08.c) |
 | 9 | [Insert, Remove, and the Cost of Shifting](https://pablogs.dev/posts/insert-remove-memmove-swap-remove-dynamic-array-c/) | `memmove`, swap-remove | [post_09.c](src/post_09.c) |
-| 10 | Iterators and Traversal | Iterator structs, invalidation rules | *coming soon* |
+| 10 | [Iterators and Traversal](https://pablogs.dev/posts/iterators-traversal-patterns-c/) | Iterator structs, invalidation rules | [post_10.c](src/post_10.c) |
 | 11 | Memory Layout and Cache Performance | Alignment, padding, SoA vs AoS | *coming soon* |
 | 12 | Benchmarking Methodology | `clock_gettime`, statistical rigor | *coming soon* |
 | 13 | Shrink-to-Fit and Memory Reclamation | Hysteresis, shrink policies | *coming soon* |
