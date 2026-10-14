@@ -42,7 +42,7 @@ Every post is a self-contained C file. No external dependencies, just a C11 comp
 
 ```bash
 # Compile and run any post
-gcc -std=c11 -Wall -Wextra -o post_01 src_posts/post_01.c
+gcc -std=c11 -Wall -Wextra -o post_01 src/post_01.c
 ./post_01
 
 # Or use the Makefile
