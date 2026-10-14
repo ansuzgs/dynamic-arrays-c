@@ -1,6 +1,6 @@
 # Dynamic Arrays in C: From malloc to Production
 
-A blog series that builds a dynamic array library in C from scratch — one post at a time, every line compilable.
+A blog series that builds a dynamic array library in C from scratch, one post at a time, every line compilable.
 
 No hand-waving. No pseudocode. Every post produces a working `.c` file you can compile and run.
 
@@ -10,7 +10,7 @@ No hand-waving. No pseudocode. Every post produces a working `.c` file you can c
 
 Most C tutorials either stop at `malloc`/`free` or dump a 2000-line library on you and say "read the source." This series bridges the gap: 15 posts that incrementally build a generic, production-quality dynamic array, explaining every design decision along the way.
 
-Each post introduces exactly one concept, compiles to a standalone program, and includes ASCII/Graphviz visualizations of memory layout so you can *see* what the code does — not just read about it.
+Each post introduces exactly one concept, compiles to a standalone program, and includes ASCII/Graphviz visualizations of memory layout so you can *see* what the code does, not just read about it.
 
 ## Posts
 
@@ -20,7 +20,7 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 | 2 | [Growing Pains](https://pablogs.dev/posts/post-02-growing-pain) | `realloc`, automatic capacity management | [post_02.c](src/post_02.c) |
 | 3 | [The Growth Factor Debate](https://pablogs.dev/posts/post-03-growth-factor) | Amortized analysis, 1.5× vs 2× | [post_03.c](src/post_03.c) |
 | 4 | [Type Erasure](https://pablogs.dev/posts/type-erasure-generic-array-void-pointer-memcpy-c/) | `void*` generics, `memcpy`, byte-level layout | [post_04.c](src/post_04.c) |
-| 5 | [Type-Safe Wrappers](https://pablogs.dev/posts/type-safe-wrapper-macros-void-pointer-dynamic-array-c/) | Macros, `_Generic` (C11), compile-time checks | [post_05](src/post_05.c) |
+| 5 | [Type-Safe Wrappers](https://pablogs.dev/posts/type-safe-wrapper-macros-void-pointer-dynamic-array-c/) | Macros, `_Generic` (C11), compile-time checks | [post_05.c](src/post_05.c) |
 | 6 | [Error Handling Strategies](https://pablogs.dev/posts/error-handling-strategies-realloc-failure-dynamic-array-c/) | OOM recovery, preserving array state | [post_06.c](src/post_06.c) |
 | 7 | [Function Pointers and Callbacks](https://pablogs.dev/posts/function-pointers-callbacks-sort-search-destroy-c/) | Comparators, destructors, `foreach` | [post_07.c](src/post_07.c) |
 | 8 | [Bounds Checking and Defensive APIs](https://pablogs.dev/posts/bounds-checking-defensive-api-assert-ndebug-c/) | Debug vs release, safe accessors | [post_08.c](src/post_08.c) |
@@ -34,11 +34,11 @@ Each post introduces exactly one concept, compiles to a standalone program, and 
 
 ## Who This Is For
 
-You know C basics — pointers, structs, `printf`. You want to understand how real C libraries manage memory and expose generic APIs without templates, inheritance, or a garbage collector. Maybe you write embedded code, do CTFs, or you're a Rust/C++ developer curious about how C solves the same problems.
+You know C basics, pointers, structs, `printf`. You want to understand how real C libraries manage memory and expose generic APIs without templates, inheritance, or a garbage collector. Maybe you write embedded code, do CTFs, or you're a Rust/C++ developer curious about how C solves the same problems.
 
 ## Building
 
-Every post is a self-contained C file. No external dependencies — just a C11 compiler.
+Every post is a self-contained C file. No external dependencies, just a C11 compiler.
 
 ```bash
 # Compile and run any post
